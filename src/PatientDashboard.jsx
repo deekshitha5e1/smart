@@ -1,45 +1,38 @@
 import React from 'react';
-import { Calendar, FileText, Activity, LogOut } from 'lucide-react';
+import { LogOut, CalendarPlus, FileText, Pill, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import ModuleCard from './components/ModuleCard';
 
-const PatientDashboard = ({ onLogout }) => {
+const PatientDashboard = () => {
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    navigate('/');
+  };
+
+  const modules = [
+    { title: 'Appointments', path: '/patient/appointments', icon: CalendarPlus, color: 'var(--primary)', desc: 'Book or manage your upcoming visits' },
+    { title: 'Medical Records', path: '/patient/records', icon: FileText, color: 'var(--secondary)', desc: 'View your test results and history' },
+    { title: 'Prescriptions', path: '/patient/prescriptions', icon: Pill, color: '#f59e0b', desc: 'Request refills and view active meds' },
+    { title: 'AI Symptom Checker', path: '/patient/ai-checker', icon: Activity, color: '#8b5cf6', desc: 'Check your symptoms instantly' }
+  ];
+
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>Patient Dashboard</h2>
-        <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>
-          <LogOut size={16} /> Logout
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', animation: 'slideUp 0.4s ease-out' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+        <div>
+          <h2 style={{ fontSize: '2rem', color: 'var(--text-dark)' }}>Patient Dashboard</h2>
+          <p style={{ color: 'var(--text-light)' }}>Welcome back! Select a module to proceed.</p>
+        </div>
+        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '12px', cursor: 'pointer', fontWeight: '500' }}>
+          <LogOut size={18} /> Logout
         </button>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ background: 'var(--primary)', padding: '0.75rem', borderRadius: '8px', color: 'white' }}>
-              <Calendar size={24} />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-light)' }}>Next Appointment</h3>
-              <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>Oct 24, 10:00 AM</p>
-            </div>
-          </div>
-        </div>
-        
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ background: 'var(--secondary)', padding: '0.75rem', borderRadius: '8px', color: 'white' }}>
-              <FileText size={24} />
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-light)' }}>Test Results</h3>
-              <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>2 New Updates</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-        <h3 style={{ marginBottom: '1rem' }}>My Health Records</h3>
-        <p style={{ color: 'var(--text-light)' }}>All recent records are up to date.</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        {modules.map((mod, index) => (
+          <ModuleCard key={index} mod={mod} />
+        ))}
       </div>
     </div>
   );
