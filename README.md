@@ -1,16 +1,66 @@
-# React + Vite
+# CarePulse - Smart Hospital Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive, and aesthetically premium frontend web application built for healthcare professionals and patients. This system provides distinct experiences for doctors and patients, allowing them to manage appointments, access medical records, and coordinate care seamlessly.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### **Patient Dashboard**
+- **Appointments**: Book or manage upcoming hospital visits dynamically.
+- **Medical Records**: Securely view past visit histories, test results, and diagnoses.
+- **Prescription Management**: Request medication refills and view active prescriptions.
+- **AI Symptom Checker**: A smart module designed to analyze symptoms instantly.
 
-## React Compiler
+### **Doctor Dashboard**
+- **Accept Appointment**: Review and approve incoming consultation requests.
+- **Total Patients**: Manage the roster of patients under the doctor's care.
+- **Schedule Appointment**: Book follow-up appointments manually.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### **General Features**
+- **Modular Architecture**: Built utilizing clean, reusable React components (`<PageLayout />`, `<ModuleCard />`).
+- **Dynamic Routing**: Full Single Page Application (SPA) experience powered by `react-router-dom` (utilizing `HashRouter` for flawless Vercel/GitHub Pages compatibility).
+- **Glassmorphism UI**: High-end styling using Vanilla CSS featuring blurs, gradients, and subtle micro-animations.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+- **Framework**: React 19 + Vite
+- **Routing**: React Router DOM (HashRouter)
+- **Styling**: Vanilla CSS (CSS Variables, Flexbox, CSS Grid)
+- **Icons**: Lucide React
+- **Typography**: Google Fonts (Outfit & Inter)
+
+---
+
+## 💻 Running Locally
+
+To run this project on your local machine, follow these steps:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/deekshitha5e1/smart.git
+   cd smart
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and navigate to `http://localhost:5173`.
+
+---
+
+## 🌐 Deployment
+
+This project is fully configured for deployment on **Vercel** and **GitHub Pages**.
+
+- The `vite.config.js` and `vercel.json` files are properly configured to support client-side routing on Vercel without returning 404 errors. 
+- A `gh-pages` deployment script is also available via `npm run deploy`.
+
+*Developed with focus on beautiful UI and robust component architecture.*
