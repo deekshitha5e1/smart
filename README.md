@@ -64,3 +64,4 @@ This project is fully configured for deployment on **Vercel** and **GitHub Pages
 - A `gh-pages` deployment script is also available via `npm run deploy`.
 
 *Developed with focus on beautiful UI and robust component architecture.*
+
