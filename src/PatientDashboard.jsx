@@ -6,7 +6,14 @@ import ModuleCard from './components/ModuleCard';
 const PatientDashboard = () => {
   const navigate = useNavigate();
   
+  const userEmail = localStorage.getItem('userEmail') || 'patient@carepulse.com';
+  const userName = localStorage.getItem('userName') || 'Patient User';
+  const userPhoto = localStorage.getItem('userPhoto');
+
   const handleLogout = () => {
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userPhoto');
     navigate('/');
   };
 
@@ -19,14 +26,51 @@ const PatientDashboard = () => {
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', animation: 'slideUp 0.4s ease-out' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div>
           <h2 style={{ fontSize: '2rem', color: 'var(--text-dark)' }}>Patient Dashboard</h2>
           <p style={{ color: 'var(--text-light)' }}>Welcome back! Select a module to proceed.</p>
         </div>
-        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '12px', cursor: 'pointer', fontWeight: '500' }}>
-          <LogOut size={18} /> Logout
-        </button>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.75rem', 
+            padding: '0.5rem 1rem', 
+            background: 'white', 
+            border: '1px solid #e2e8f0', 
+            borderRadius: '16px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+          }}>
+            {userPhoto ? (
+              <img src={userPhoto} alt="Profile" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ 
+                width: '36px', 
+                height: '36px', 
+                borderRadius: '50%', 
+                background: 'rgba(16, 185, 129, 0.1)', 
+                color: 'var(--secondary)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontWeight: 'bold',
+                fontSize: '0.9rem'
+              }}>
+                {userName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-dark)' }}>{userName}</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{userEmail}</span>
+            </div>
+          </div>
+
+          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.25rem', borderRadius: '12px', cursor: 'pointer', fontWeight: '500', transition: 'background 0.2s ease' }}>
+            <LogOut size={18} /> Logout
+          </button>
+        </div>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>

@@ -16,6 +16,9 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('userName', email.split('@')[0]);
+    localStorage.removeItem('userPhoto');
     if (email.toLowerCase().includes('doctor') || email.toLowerCase().includes('dr')) {
       navigate('/doctor');
     } else {
@@ -34,6 +37,9 @@ function Login() {
     if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY.includes('your_')) {
       alert(`[Demo Mode] Firebase is not fully configured in your .env file.
 Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Patient'}...`);
+      localStorage.setItem('userEmail', `${googleRole}@carepulse.com`);
+      localStorage.setItem('userName', `Demo ${googleRole === 'doctor' ? 'Doctor' : 'Patient'}`);
+      localStorage.removeItem('userPhoto');
       navigate(googleRole === 'doctor' ? '/doctor' : '/patient');
       return;
     }
@@ -41,6 +47,13 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
     signInWithPopup(auth, googleProvider)
       .then((result) => {
         const user = result.user;
+        localStorage.setItem('userEmail', user.email);
+        localStorage.setItem('userName', user.displayName || 'Google User');
+        if (user.photoURL) {
+          localStorage.setItem('userPhoto', user.photoURL);
+        } else {
+          localStorage.removeItem('userPhoto');
+        }
         alert(`Welcome, ${user.displayName || 'Google User'}! Signed in successfully.`);
         navigate(googleRole === 'doctor' ? '/doctor' : '/patient');
       })
