@@ -24,18 +24,18 @@ const DoctorDashboard = () => {
   ];
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', animation: 'slideUp 0.4s ease-out', position: 'relative' }}>
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', animation: 'slideUp 0.4s ease-out' }}>
       
-      {/* Absolutely positioned profile and logout in top right corner */}
+      {/* Top Header Navigation Row */}
       <div style={{ 
-        position: 'absolute', 
-        top: '2rem', 
-        right: '2rem', 
         display: 'flex', 
+        justifyContent: 'flex-end', 
         alignItems: 'center', 
         gap: '1.25rem', 
-        flexWrap: 'wrap',
-        zIndex: 100
+        marginBottom: '2rem',
+        borderBottom: '1px solid #f1f5f9',
+        paddingBottom: '1.25rem',
+        flexWrap: 'wrap'
       }}>
         <div style={{ 
           display: 'flex', 
@@ -76,11 +76,9 @@ const DoctorDashboard = () => {
         </button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-        <div style={{ maxWidth: '60%' }}>
-          <h2 style={{ fontSize: '2rem', color: 'var(--text-dark)' }}>Doctor Dashboard</h2>
-          <p style={{ color: 'var(--text-light)' }}>Manage your schedule and patients.</p>
-        </div>
+      <div style={{ marginBottom: '3rem' }}>
+        <h2 style={{ fontSize: '2rem', color: 'var(--text-dark)' }}>Doctor Dashboard</h2>
+        <p style={{ color: 'var(--text-light)' }}>Manage your schedule and patients.</p>
       </div>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
