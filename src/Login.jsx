@@ -78,6 +78,7 @@ function Login() {
       return;
     }
     setShowRoleError(false);
+    setLoading(true);
 
     signInWithPopup(auth, googleProvider)
       .then(async (result) => {
@@ -143,7 +144,13 @@ function Login() {
       })
       .catch((error) => {
         console.error("Firebase OAuth Error:", error);
-        alert(`Sign-in failed: ${error.message}`);
+        // Ignore errors caused by the user closing the popup or concurrent requests
+        if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
+          alert(`Sign-in failed: ${error.message}`);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
@@ -322,6 +329,7 @@ function Login() {
                   type="button"
                   className="btn-social"
                   onClick={handleGoogleLogin}
+                  disabled={loading}
                   style={{
                     width: '100%',
                     background: googleRole ? 'white' : '#f8fafc',
@@ -331,7 +339,8 @@ function Login() {
                     cursor: 'pointer',
                     fontWeight: '600',
                     transition: 'all 0.2s ease',
-                    boxShadow: googleRole ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none'
+                    boxShadow: googleRole ? '0 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
+                    opacity: loading ? 0.7 : 1
                   }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
