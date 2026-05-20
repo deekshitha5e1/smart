@@ -38,7 +38,7 @@ A modern, responsive, and aesthetically premium frontend web application built f
 │   ├── Login.jsx         # Sign in flow with credentials + Google popups
 │   ├── DoctorDashboard.jsx   # Doctor dashboard layout with profile headers
 │   ├── PatientDashboard.jsx  # Patient dashboard layout with profile headers
-│   ├── RequestAccess.jsx     # Request new credentials modal
+│   ├── Signup.jsx            # Sign up new user credentials modal
 │   ├── App.css           # Styling rules, layouts, and glassmorphism themes
 │   ├── components/       # Common shared components (ModuleCard, PageLayout)
 │   └── pages/            # Feature directories (AcceptAppointment, Prescriptions, AIChecker, etc.)

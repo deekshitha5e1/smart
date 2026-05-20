@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Mail, Lock, HeartPulse, ArrowRight, Activity, ShieldCheck, Stethoscope, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import RequestAccess from './RequestAccess';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from './firebase';
+import Signup from './Signup';
+import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, googleProvider, UserRole, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import './App.css';
 
 function Login() {
@@ -11,18 +12,63 @@ function Login() {
   const [password, setPassword] = useState('');
   const [googleRole, setGoogleRole] = useState(''); // 'doctor' or 'patient'
   const [showRoleError, setShowRoleError] = useState(false);
-  const [isRequestingAccess, setIsRequestingAccess] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userName', email.split('@')[0]);
-    localStorage.removeItem('userPhoto');
-    if (email.toLowerCase().includes('doctor') || email.toLowerCase().includes('dr')) {
-      navigate('/doctor');
-    } else {
-      navigate('/patient');
+    if (!email || !password) return;
+    
+    setLoading(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Retrieve user profile from Firestore to determine role
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        
+        localStorage.setItem('userEmail', user.email);
+        localStorage.setItem('userName', userData.fullName || user.email.split('@')[0]);
+        localStorage.removeItem('userPhoto');
+
+        if (userData.role === UserRole.DOCTOR) {
+          navigate('/doctor');
+        } else {
+          navigate('/patient');
+        }
+      } else {
+        // Fallback: If the user exists in Auth but has no Firestore profile, automatically create one as a Patient.
+        const defaultUserData = {
+          uid: user.uid,
+          fullName: user.displayName || user.email.split('@')[0],
+          email: user.email,
+          role: UserRole.PATIENT,
+          createdAt: new Date().toISOString(),
+          status: 'active'
+        };
+        
+        try {
+          await setDoc(userDocRef, defaultUserData);
+          localStorage.setItem('userEmail', user.email);
+          localStorage.setItem('userName', defaultUserData.fullName);
+          localStorage.removeItem('userPhoto');
+          navigate('/patient');
+        } catch (dbError) {
+          console.error("Failed to auto-create missing profile:", dbError);
+          alert("Database Error: Could not verify or create your user profile. Please check your Firestore rules.");
+          auth.signOut();
+        }
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert(`Sign in failed: ${error.message} (${error.code})`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,20 +79,11 @@ function Login() {
     }
     setShowRoleError(false);
 
-    // If VITE_FIREBASE_API_KEY is not set or is template, run mock/simulated login
-    if (!import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY.includes('your_')) {
-      alert(`[Demo Mode] Firebase is not fully configured in your .env file.
-Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Patient'}...`);
-      localStorage.setItem('userEmail', `${googleRole}@carepulse.com`);
-      localStorage.setItem('userName', `Demo ${googleRole === 'doctor' ? 'Doctor' : 'Patient'}`);
-      localStorage.removeItem('userPhoto');
-      navigate(googleRole === 'doctor' ? '/doctor' : '/patient');
-      return;
-    }
-
     signInWithPopup(auth, googleProvider)
-      .then((result) => {
+      .then(async (result) => {
         const user = result.user;
+        
+        // Save to localStorage
         localStorage.setItem('userEmail', user.email);
         localStorage.setItem('userName', user.displayName || 'Google User');
         if (user.photoURL) {
@@ -54,8 +91,30 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
         } else {
           localStorage.removeItem('userPhoto');
         }
+
+        try {
+          // Check if user exists in Firestore, if not, create them
+          const userDocRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            const userData = {
+              uid: user.uid,
+              fullName: user.displayName || 'Google User',
+              email: user.email,
+              role: googleRole,
+              createdAt: new Date().toISOString(),
+              status: googleRole === UserRole.DOCTOR ? 'pending' : 'active'
+            };
+            await setDoc(userDocRef, userData);
+          }
+        } catch (dbError) {
+          console.error("Error saving OAuth user to Firestore:", dbError);
+          alert("Error saving profile to database. Please check your Firestore rules.");
+        }
+
         alert(`Welcome, ${user.displayName || 'Google User'}! Signed in successfully.`);
-        navigate(googleRole === 'doctor' ? '/doctor' : '/patient');
+        navigate(googleRole === UserRole.DOCTOR ? '/doctor' : '/patient');
       })
       .catch((error) => {
         console.error("Firebase OAuth Error:", error);
@@ -63,10 +122,10 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
       });
   };
 
-  if (isRequestingAccess) {
+  if (isSigningUp) {
     return (
       <div className="app-container">
-        <RequestAccess onBack={() => setIsRequestingAccess(false)} />
+        <Signup onBack={() => setIsSigningUp(false)} />
       </div>
     );
   }
@@ -142,9 +201,9 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
               <a href="#" className="forgot-password">Forgot password?</a>
             </div>
             
-            <button type="submit" className="btn-submit" style={{ marginTop: '0.5rem' }}>
-              Sign In to CarePulse
-              <ArrowRight size={18} />
+            <button type="submit" className="btn-submit" disabled={loading} style={{ marginTop: '0.5rem', opacity: loading ? 0.7 : 1 }}>
+              {loading ? 'Signing In...' : 'Sign In to CarePulse'}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
           
@@ -181,16 +240,16 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
                   <button
                     type="button"
                     onClick={() => {
-                      setGoogleRole('doctor');
+                      setGoogleRole(UserRole.DOCTOR);
                       setShowRoleError(false);
                     }}
                     style={{
                       flex: 1,
                       padding: '0.65rem 0.5rem',
                       border: '1.5px solid',
-                      borderColor: googleRole === 'doctor' ? 'var(--primary)' : '#e2e8f0',
-                      background: googleRole === 'doctor' ? 'white' : '#f1f5f9',
-                      color: googleRole === 'doctor' ? 'var(--primary)' : 'var(--text-light)',
+                      borderColor: googleRole === UserRole.DOCTOR ? 'var(--primary)' : '#e2e8f0',
+                      background: googleRole === UserRole.DOCTOR ? 'white' : '#f1f5f9',
+                      color: googleRole === UserRole.DOCTOR ? 'var(--primary)' : 'var(--text-light)',
                       borderRadius: '10px',
                       fontSize: '0.8rem',
                       fontWeight: '600',
@@ -200,7 +259,7 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '0.35rem',
-                      boxShadow: googleRole === 'doctor' ? '0 4px 8px rgba(14, 165, 233, 0.12)' : 'none'
+                      boxShadow: googleRole === UserRole.DOCTOR ? '0 4px 8px rgba(14, 165, 233, 0.12)' : 'none'
                     }}
                   >
                     <ShieldCheck size={16} /> Doctor
@@ -208,16 +267,16 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
                   <button
                     type="button"
                     onClick={() => {
-                      setGoogleRole('patient');
+                      setGoogleRole(UserRole.PATIENT);
                       setShowRoleError(false);
                     }}
                     style={{
                       flex: 1,
                       padding: '0.65rem 0.5rem',
                       border: '1.5px solid',
-                      borderColor: googleRole === 'patient' ? 'var(--secondary)' : '#e2e8f0',
-                      background: googleRole === 'patient' ? 'white' : '#f1f5f9',
-                      color: googleRole === 'patient' ? 'var(--secondary)' : 'var(--text-light)',
+                      borderColor: googleRole === UserRole.PATIENT ? 'var(--secondary)' : '#e2e8f0',
+                      background: googleRole === UserRole.PATIENT ? 'white' : '#f1f5f9',
+                      color: googleRole === UserRole.PATIENT ? 'var(--secondary)' : 'var(--text-light)',
                       borderRadius: '10px',
                       fontSize: '0.8rem',
                       fontWeight: '600',
@@ -227,7 +286,7 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '0.35rem',
-                      boxShadow: googleRole === 'patient' ? '0 4px 8px rgba(16, 185, 129, 0.12)' : 'none'
+                      boxShadow: googleRole === UserRole.PATIENT ? '0 4px 8px rgba(16, 185, 129, 0.12)' : 'none'
                     }}
                   >
                     <User size={16} /> Patient
@@ -264,8 +323,8 @@ Proceeding with simulation for role: ${googleRole === 'doctor' ? 'Doctor' : 'Pat
           
           <div className="signup-prompt">
             Don't have an account?{' '}
-            <a href="#" onClick={(e) => { e.preventDefault(); setIsRequestingAccess(true); }}>
-              Request Access
+            <a href="#" onClick={(e) => { e.preventDefault(); setIsSigningUp(true); }}>
+              Sign Up
             </a>
           </div>
         </div>
