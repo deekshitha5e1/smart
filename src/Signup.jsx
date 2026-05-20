@@ -27,26 +27,29 @@ const Signup = ({ onBack }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Write the user's details to the 'users' collection in Cloud Firestore
-      const userData = {
-        uid: user.uid,
-        fullName: fullName,
-        email: email,
-        role: role,
-        createdAt: new Date().toISOString()
-      };
-
-      // Differentiate stored fields based on the role enum
+      // 2. Call the FastAPI backend to store the user details in PostgreSQL/Supabase
+      const url = new URL('http://localhost:8000/api/users/signup');
       if (role === UserRole.DOCTOR) {
-        userData.hospitalId = hospitalId;
-        userData.status = 'pending'; // Medical professionals require administrative review
-      } else if (role === UserRole.PATIENT) {
-        userData.status = 'active'; // Patients are active automatically
+        url.searchParams.append('hospital_id', hospitalId);
       }
 
-      await setDoc(doc(db, "users", user.uid), userData);
+      const response = await fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: user.uid,
+          email: email,
+          full_name: fullName,
+          role: role
+        })
+      });
 
-      alert('Sign up successful! Your user account and profile are stored in Firestore.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to store user profile in database');
+      }
+
+      alert('Sign up successful! Your user account and profile are stored in Supabase PostgreSQL.');
       onBack();
     } catch (error) {
       console.error("Firebase Auth & Firestore Registration Error:", error);

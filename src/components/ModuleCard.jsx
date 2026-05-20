@@ -9,9 +9,15 @@ const ModuleCard = ({ mod }) => {
     <div 
       onClick={() => navigate(mod.path)}
       style={{ 
-        background: 'white', padding: '2rem', borderRadius: '16px', 
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9',
-        cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s'
+        background: mod.highlight ? 'linear-gradient(to right bottom, #ffffff, #f3e8ff)' : 'white', 
+        padding: '2rem', 
+        borderRadius: '16px', 
+        boxShadow: mod.highlight ? '0 4px 15px rgba(139, 92, 246, 0.15)' : '0 4px 6px -1px rgba(0,0,0,0.05)', 
+        border: mod.highlight ? '2px solid #a78bfa' : '1px solid #f1f5f9',
+        cursor: 'pointer', 
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        position: 'relative',
+        overflow: 'hidden'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-5px)';

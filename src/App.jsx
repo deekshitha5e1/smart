@@ -14,6 +14,7 @@ import AIChecker from './pages/patient/AIChecker';
 import AcceptAppointment from './pages/doctor/AcceptAppointment';
 import TotalPatients from './pages/doctor/TotalPatients';
 import DoctorSchedule from './pages/doctor/DoctorSchedule';
+import DoctorProfile from './pages/doctor/DoctorProfile';
 
 import './App.css';
 
@@ -26,6 +27,7 @@ function App() {
       <Route path="/doctor/accept-appointment" element={<AcceptAppointment />} />
       <Route path="/doctor/patients" element={<TotalPatients />} />
       <Route path="/doctor/schedule" element={<DoctorSchedule />} />
+      <Route path="/doctor/profile" element={<DoctorProfile />} />
       
       <Route path="/patient" element={<PatientDashboard />} />
       <Route path="/patient/appointments" element={<PatientAppointments />} />

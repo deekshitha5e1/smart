@@ -25,15 +25,15 @@ function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Retrieve user profile from Firestore to determine role
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+      // Retrieve user profile from FastAPI Backend to determine role
+      const response = await fetch(`http://localhost:8000/api/users/${user.uid}`);
+      
+      if (response.ok) {
+        const userData = await response.json();
         
         localStorage.setItem('userEmail', user.email);
-        localStorage.setItem('userName', userData.fullName || user.email.split('@')[0]);
+        localStorage.setItem('userName', userData.full_name || user.email.split('@')[0]);
+        localStorage.setItem('userUid', user.uid);
         localStorage.removeItem('userPhoto');
 
         if (userData.role === UserRole.DOCTOR) {
@@ -41,26 +41,37 @@ function Login() {
         } else {
           navigate('/patient');
         }
-      } else {
-        // Fallback: If the user exists in Auth but has no Firestore profile, automatically create one as a Patient.
+      } else if (response.status === 404) {
+        // Fallback: If the user exists in Auth but has no profile in PostgreSQL, automatically create one as a Patient.
         const defaultUserData = {
           uid: user.uid,
           fullName: user.displayName || user.email.split('@')[0],
           email: user.email,
-          role: UserRole.PATIENT,
-          createdAt: new Date().toISOString(),
-          status: 'active'
+          role: UserRole.PATIENT
         };
         
         try {
-          await setDoc(userDocRef, defaultUserData);
+          const signupResponse = await fetch('http://localhost:8000/api/users/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              uid: defaultUserData.uid,
+              email: defaultUserData.email,
+              full_name: defaultUserData.fullName,
+              role: defaultUserData.role
+            })
+          });
+
+          if (!signupResponse.ok) throw new Error("Backend signup failed");
+
           localStorage.setItem('userEmail', user.email);
           localStorage.setItem('userName', defaultUserData.fullName);
+          localStorage.setItem('userUid', user.uid);
           localStorage.removeItem('userPhoto');
           navigate('/patient');
         } catch (dbError) {
           console.error("Failed to auto-create missing profile:", dbError);
-          alert("Database Error: Could not verify or create your user profile. Please check your Firestore rules.");
+          alert("Database Error: Could not verify or create your user profile in Supabase.");
           auth.signOut();
         }
       }
@@ -87,6 +98,7 @@ function Login() {
         // Save to localStorage
         localStorage.setItem('userEmail', user.email);
         localStorage.setItem('userName', user.displayName || 'Google User');
+        localStorage.setItem('userUid', user.uid);
         if (user.photoURL) {
           localStorage.setItem('userPhoto', user.photoURL);
         } else {
@@ -94,11 +106,10 @@ function Login() {
         }
 
         try {
-          // Check if user exists in Firestore, if not, create them
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
+          // Check if user exists in our FastAPI/Supabase DB
+          const checkResponse = await fetch(`http://localhost:8000/api/users/${user.uid}`);
           
-          if (!userDoc.exists()) {
+          if (checkResponse.status === 404) {
             let medicalId = null;
             if (googleRole === UserRole.DOCTOR) {
               medicalId = window.prompt("Please enter your Medical ID / Hospital ID to complete doctor registration:");
@@ -109,25 +120,32 @@ function Login() {
               }
             }
 
-            const userData = {
-              uid: user.uid,
-              fullName: user.displayName || 'Google User',
-              email: user.email,
-              role: googleRole,
-              createdAt: new Date().toISOString(),
-              status: googleRole === UserRole.DOCTOR ? 'pending' : 'active'
-            };
-
+            const url = new URL('http://localhost:8000/api/users/signup');
             if (googleRole === UserRole.DOCTOR) {
-              userData.hospitalId = medicalId;
+              url.searchParams.append('hospital_id', medicalId);
             }
 
-            await setDoc(userDocRef, userData);
+            const signupResponse = await fetch(url.toString(), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                full_name: user.displayName || 'Google User',
+                role: googleRole
+              })
+            });
+
+            if (!signupResponse.ok) {
+              throw new Error("Failed to initialize Google user profile on backend");
+            }
+
             alert(`Welcome, ${user.displayName || 'Google User'}! Signed in successfully.`);
             navigate(googleRole === UserRole.DOCTOR ? '/doctor' : '/patient');
-          } else {
+          } else if (checkResponse.ok) {
             // User already exists. Verify they are logging into the correct role.
-            const existingRole = userDoc.data().role;
+            const existingUser = await checkResponse.json();
+            const existingRole = existingUser.role;
             if (existingRole !== googleRole) {
               auth.signOut();
               alert(`Access Denied: Your account is registered as a ${existingRole}. You cannot log in as a ${googleRole} using the same email address.`);
@@ -136,10 +154,12 @@ function Login() {
               alert(`Welcome back, ${user.displayName || 'Google User'}!`);
               navigate(existingRole === UserRole.DOCTOR ? '/doctor' : '/patient');
             }
+          } else {
+            throw new Error("Could not verify profile from database");
           }
         } catch (dbError) {
-          console.error("Error saving/verifying OAuth user to Firestore:", dbError);
-          alert("Error verifying profile in database. Please check your Firestore connection.");
+          console.error("Error saving/verifying OAuth user to Supabase:", dbError);
+          alert("Error verifying profile in database. Please check your connection.");
         }
       })
       .catch((error) => {

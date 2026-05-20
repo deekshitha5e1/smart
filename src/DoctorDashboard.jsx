@@ -18,6 +18,7 @@ const DoctorDashboard = () => {
   };
 
   const modules = [
+    { title: 'Doctor Profile', path: '/doctor/profile', icon: Users, color: '#8b5cf6', desc: 'Manage your personal details and schedule', highlight: true },
     { title: 'Accept Appointment', path: '/doctor/accept-appointment', icon: CalendarCheck, color: 'var(--primary)', desc: 'Review and approve incoming requests' },
     { title: 'Total Patients', path: '/doctor/patients', icon: Users, color: 'var(--secondary)', desc: 'Manage your patient roster' },
     { title: 'Schedule Appointment', path: '/doctor/schedule', icon: CalendarPlus, color: '#f59e0b', desc: 'Book follow-ups manually' }
