@@ -98,6 +98,16 @@ function Login() {
           const userDoc = await getDoc(userDocRef);
           
           if (!userDoc.exists()) {
+            let medicalId = null;
+            if (googleRole === UserRole.DOCTOR) {
+              medicalId = window.prompt("Please enter your Medical ID / Hospital ID to complete doctor registration:");
+              if (!medicalId) {
+                auth.signOut();
+                alert("Registration cancelled. A Medical ID is required for doctors.");
+                return;
+              }
+            }
+
             const userData = {
               uid: user.uid,
               fullName: user.displayName || 'Google User',
@@ -106,15 +116,30 @@ function Login() {
               createdAt: new Date().toISOString(),
               status: googleRole === UserRole.DOCTOR ? 'pending' : 'active'
             };
+
+            if (googleRole === UserRole.DOCTOR) {
+              userData.hospitalId = medicalId;
+            }
+
             await setDoc(userDocRef, userData);
+            alert(`Welcome, ${user.displayName || 'Google User'}! Signed in successfully.`);
+            navigate(googleRole === UserRole.DOCTOR ? '/doctor' : '/patient');
+          } else {
+            // User already exists. Verify they are logging into the correct role.
+            const existingRole = userDoc.data().role;
+            if (existingRole !== googleRole) {
+              auth.signOut();
+              alert(`Access Denied: Your account is registered as a ${existingRole}. You cannot log in as a ${googleRole} using the same email address.`);
+              return; // Stop the login process
+            } else {
+              alert(`Welcome back, ${user.displayName || 'Google User'}!`);
+              navigate(existingRole === UserRole.DOCTOR ? '/doctor' : '/patient');
+            }
           }
         } catch (dbError) {
-          console.error("Error saving OAuth user to Firestore:", dbError);
-          alert("Error saving profile to database. Please check your Firestore rules.");
+          console.error("Error saving/verifying OAuth user to Firestore:", dbError);
+          alert("Error verifying profile in database. Please check your Firestore connection.");
         }
-
-        alert(`Welcome, ${user.displayName || 'Google User'}! Signed in successfully.`);
-        navigate(googleRole === UserRole.DOCTOR ? '/doctor' : '/patient');
       })
       .catch((error) => {
         console.error("Firebase OAuth Error:", error);
