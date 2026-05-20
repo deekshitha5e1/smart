@@ -40,7 +40,7 @@ const PatientDashboard = () => {
     
     setSearching(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/doctors/search?specialisation=${searchQuery}`);
+      const response = await fetch(`/api/doctors/search?specialisation=${searchQuery}`);
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(doc => ({
@@ -70,7 +70,7 @@ const PatientDashboard = () => {
     
     setBooking(true);
     try {
-      const response = await fetch('http://localhost:8000/api/patient/appointment', {
+      const response = await fetch('/api/patient/appointment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

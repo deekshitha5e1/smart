@@ -21,7 +21,7 @@ const AcceptAppointment = () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:8000/api/doctor/${userUid}/appointments`);
+      const response = await fetch(`/api/doctor/${userUid}/appointments`);
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(app => ({
@@ -45,7 +45,7 @@ const AcceptAppointment = () => {
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/appointment/${id}/status?status=${newStatus}`, {
+      const response = await fetch(`/api/appointment/${id}/status?status=${newStatus}`, {
         method: 'PUT'
       });
 

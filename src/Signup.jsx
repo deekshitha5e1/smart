@@ -28,7 +28,7 @@ const Signup = ({ onBack }) => {
       const user = userCredential.user;
 
       // 2. Call the FastAPI backend to store the user details in PostgreSQL/Supabase
-      const url = new URL('http://localhost:8000/api/users/signup');
+      const url = new URL('/api/users/signup', window.location.origin);
       if (role === UserRole.DOCTOR) {
         url.searchParams.append('hospital_id', hospitalId);
       }
