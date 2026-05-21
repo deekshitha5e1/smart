@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, UserPlus, HeartPulse, Lock, Mail, User, ShieldCheck } from 'lucide-react';
-import { auth, UserRole } from './firebase';
+import { auth, db, UserRole } from './firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { apiUrl } from './api';
+import { doc, setDoc } from 'firebase/firestore';
 
 const Signup = ({ onBack }) => {
   const [role, setRole] = useState(UserRole.PATIENT);
@@ -28,7 +28,7 @@ const Signup = ({ onBack }) => {
       const user = userCredential.user;
 
       // 2. Call the FastAPI backend to store the user details in PostgreSQL/Supabase
-      const url = new URL(apiUrl('/api/users/signup'), window.location.origin);
+      const url = new URL('/api/users/signup', window.location.origin);
       if (role === UserRole.DOCTOR) {
         url.searchParams.append('hospital_id', hospitalId);
       }

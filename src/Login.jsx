@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Mail, Lock, HeartPulse, ArrowRight, Activity, ShieldCheck, Stethoscope, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Signup from './Signup';
 import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, googleProvider, UserRole } from './firebase';
-import { apiUrl } from './api';
+import { auth, googleProvider, UserRole, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import './App.css';
 
 function Login() {
@@ -26,7 +26,7 @@ function Login() {
       const user = userCredential.user;
 
       // Retrieve user profile from FastAPI Backend to determine role
-      const response = await fetch(apiUrl(`/api/users/${user.uid}`));
+      const response = await fetch(`/api/users/${user.uid}`);
       
       if (response.ok) {
         const userData = await response.json();
@@ -51,7 +51,7 @@ function Login() {
         };
         
         try {
-          const signupResponse = await fetch(apiUrl('/api/users/signup'), {
+          const signupResponse = await fetch('/api/users/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -107,7 +107,7 @@ function Login() {
 
         try {
           // Check if user exists in our FastAPI/Supabase DB
-          const checkResponse = await fetch(apiUrl(`/api/users/${user.uid}`));
+          const checkResponse = await fetch(`/api/users/${user.uid}`);
           
           if (checkResponse.status === 404) {
             let medicalId = null;
@@ -120,7 +120,7 @@ function Login() {
               }
             }
 
-            const url = new URL(apiUrl('/api/users/signup'), window.location.origin);
+            const url = new URL('/api/users/signup', window.location.origin);
             if (googleRole === UserRole.DOCTOR) {
               url.searchParams.append('hospital_id', medicalId);
             }

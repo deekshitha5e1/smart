@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PageLayout from '../../components/PageLayout';
-import { auth } from '../../firebase';
-import { Check, X, Calendar, Clock, User } from 'lucide-react';
-import { apiUrl } from '../../api';
+import { db, auth } from '../../firebase';
+import { collection, query, where, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore';
+import { Check, X, Calendar, Clock, User, AlertCircle } from 'lucide-react';
 
 const AcceptAppointment = () => {
   const [appointments, setAppointments] = useState([]);
@@ -10,14 +10,18 @@ const AcceptAppointment = () => {
   
   const userUid = localStorage.getItem('userUid') || auth.currentUser?.uid;
 
-  const fetchAppointments = useCallback(async () => {
+  useEffect(() => {
+    fetchAppointments();
+  }, [userUid]);
+
+  const fetchAppointments = async () => {
     if (!userUid) {
       setLoading(false);
       return;
     }
     
     try {
-      const response = await fetch(apiUrl(`/api/doctor/${userUid}/appointments`));
+      const response = await fetch(`/api/doctor/${userUid}/appointments`);
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(app => ({
@@ -37,15 +41,11 @@ const AcceptAppointment = () => {
     } finally {
       setLoading(false);
     }
-  }, [userUid]);
-
-  useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+  };
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const response = await fetch(apiUrl(`/api/appointment/${id}/status?status=${newStatus}`), {
+      const response = await fetch(`/api/appointment/${id}/status?status=${newStatus}`, {
         method: 'PUT'
       });
 

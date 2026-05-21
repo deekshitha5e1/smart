@@ -1,6 +1,8 @@
-fastapi==0.110.0
-uvicorn==0.27.1
-sqlalchemy==2.0.29
-pydantic==2.6.4
-pg8000
-python-dotenv==1.0.1
+fastapi==0.104.1
+uvicorn==0.24.0.post1
+sqlalchemy==2.0.23
+pydantic==2.5.2
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+
+
