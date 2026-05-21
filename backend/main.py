@@ -24,8 +24,14 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.laqrobzmpqkjmjulnhat:Deekshitha123%40@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 )
 
+# Force pg8000 driver so we don't get C-compilation errors (pg_config missing)
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+pg8000://", 1)
+elif DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
+
 # If they don't have PostgreSQL set up yet, fallback gracefully to SQLite so it doesn't crash
-if "postgresql" not in DATABASE_URL:
+if "pg8000" not in DATABASE_URL and "postgresql" not in DATABASE_URL:
     print("WARNING: DATABASE_URL not set to PostgreSQL. Falling back to local SQLite database.")
     DATABASE_URL = "sqlite:///./hospital.db"
     connect_args = {"check_same_thread": False}
