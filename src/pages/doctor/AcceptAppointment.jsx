@@ -16,7 +16,8 @@ const AcceptAppointment = () => {
     }
     
     try {
-      const response = await fetch(`/api/doctor/${userUid}/appointments`);
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/doctor/${userUid}/appointments`);
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(app => ({
@@ -45,7 +46,8 @@ const AcceptAppointment = () => {
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const response = await fetch(`/api/appointment/${id}/status?status=${newStatus}`, {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/appointment/${id}/status?status=${newStatus}`, {
         method: 'PUT'
       });
 

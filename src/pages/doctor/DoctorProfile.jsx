@@ -30,7 +30,8 @@ const DoctorProfile = () => {
           return;
         }
 
-        const response = await fetch(`/api/doctor/profile/${savedUid}`);
+        const API_URL = import.meta.env.VITE_API_URL || '';
+        const response = await fetch(`${API_URL}/api/doctor/profile/${savedUid}`);
         if (response.ok) {
           const data = await response.json();
           setProfileData({
@@ -84,7 +85,8 @@ const DoctorProfile = () => {
       const uid = auth.currentUser?.uid || localStorage.getItem('userUid') || profileData.uid;
       if (!uid) throw new Error("No UID found for saving profile");
 
-      const response = await fetch(`/api/doctor/profile/${uid}`, {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/doctor/profile/${uid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

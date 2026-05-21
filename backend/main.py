@@ -152,7 +152,11 @@ app = FastAPI(title="Hospital Backend API (Supabase & PostgreSQL)")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "https://smart-1-et5r.onrender.com", 
+        "https://smart-ly28b20n9-pashamdeekshitha0-9751s-projects.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

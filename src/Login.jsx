@@ -25,7 +25,8 @@ function Login() {
       const user = userCredential.user;
 
       // Retrieve user profile from FastAPI Backend to determine role
-      const response = await fetch(`/api/users/${user.uid}`);
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/users/${user.uid}`);
       
       if (response.ok) {
         const userData = await response.json();
@@ -50,7 +51,8 @@ function Login() {
         };
         
         try {
-          const signupResponse = await fetch('/api/users/signup', {
+          const API_URL = import.meta.env.VITE_API_URL || '';
+          const signupResponse = await fetch(`${API_URL}/api/users/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -106,7 +108,8 @@ function Login() {
 
         try {
           // Check if user exists in our FastAPI/Supabase DB
-          const checkResponse = await fetch(`/api/users/${user.uid}`);
+          const API_URL = import.meta.env.VITE_API_URL || '';
+          const checkResponse = await fetch(`${API_URL}/api/users/${user.uid}`);
           
           if (checkResponse.status === 404) {
             let medicalId = null;
@@ -119,7 +122,8 @@ function Login() {
               }
             }
 
-            const url = new URL('/api/users/signup', window.location.origin);
+            const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+            const url = new URL('/api/users/signup', baseUrl);
             if (googleRole === UserRole.DOCTOR) {
               url.searchParams.append('hospital_id', medicalId);
             }

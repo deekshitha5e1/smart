@@ -39,7 +39,8 @@ const PatientDashboard = () => {
     
     setSearching(true);
     try {
-      const response = await fetch(`/api/doctors/search?specialisation=${searchQuery}`);
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/doctors/search?specialisation=${searchQuery}`);
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(doc => ({
@@ -69,7 +70,8 @@ const PatientDashboard = () => {
     
     setBooking(true);
     try {
-      const response = await fetch('/api/patient/appointment', {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/patient/appointment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
