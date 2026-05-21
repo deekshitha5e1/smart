@@ -225,28 +225,51 @@ const DoctorProfile = () => {
                 <select 
                   name="shift"
                   value={profileData.shift} 
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    setProfileData(prev => ({
+                      ...prev,
+                      shift: e.target.value,
+                      freeTime: ''
+                    }));
+                  }}
                   style={{ border: 'none', background: 'transparent', padding: '0.75rem', width: '100%', outline: 'none', color: 'var(--text-dark)' }} 
                 >
-                  <option value="day">Day Shift</option>
-                  <option value="night">Night Shift</option>
+                  <option value="day">Day Shift (9:00 AM - 6:00 PM)</option>
+                  <option value="night">Night Shift (9:00 PM - 6:00 AM)</option>
                 </select>
               </div>
             </div>
 
             {/* Free Time */}
             <div className="input-group" style={{ margin: 0 }}>
-              <label>Free Time / Break</label>
+              <label>Break Time (30 mins)</label>
               <div className="input-wrapper" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0 1rem' }}>
                 <Calendar size={18} color="var(--text-light)" />
-                <input 
-                  type="text" 
+                <select 
                   name="freeTime"
-                  placeholder="e.g. 1:00 PM - 2:00 PM"
                   value={profileData.freeTime} 
                   onChange={handleChange}
-                  style={{ border: 'none', background: 'transparent', padding: '0.75rem', width: '100%', outline: 'none' }} 
-                />
+                  style={{ border: 'none', background: 'transparent', padding: '0.75rem', width: '100%', outline: 'none', color: 'var(--text-dark)' }} 
+                >
+                  <option value="" disabled>Select a break slot</option>
+                  {profileData.shift === 'day' ? (
+                    <>
+                      <option value="12:00 PM - 12:30 PM">12:00 PM - 12:30 PM</option>
+                      <option value="12:30 PM - 1:00 PM">12:30 PM - 1:00 PM</option>
+                      <option value="1:00 PM - 1:30 PM">1:00 PM - 1:30 PM</option>
+                      <option value="1:30 PM - 2:00 PM">1:30 PM - 2:00 PM</option>
+                      <option value="2:00 PM - 2:30 PM">2:00 PM - 2:30 PM</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="12:00 AM - 12:30 AM">12:00 AM - 12:30 AM</option>
+                      <option value="12:30 AM - 1:00 AM">12:30 AM - 1:00 AM</option>
+                      <option value="1:00 AM - 1:30 AM">1:00 AM - 1:30 AM</option>
+                      <option value="1:30 AM - 2:00 AM">1:30 AM - 2:00 AM</option>
+                      <option value="2:00 AM - 2:30 AM">2:00 AM - 2:30 AM</option>
+                    </>
+                  )}
+                </select>
               </div>
             </div>
 
