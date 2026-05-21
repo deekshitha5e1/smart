@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { LogOut, CalendarPlus, FileText, Pill, Activity, Search, User, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, CalendarPlus, FileText, Pill, Activity, Search, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModuleCard from './components/ModuleCard';
-import { db, auth } from './firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from './firebase';
+import { apiUrl } from './api';
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const PatientDashboard = () => {
     
     setSearching(true);
     try {
-      const response = await fetch(`/api/doctors/search?specialisation=${searchQuery}`);
+      const response = await fetch(apiUrl(`/api/doctors/search?specialisation=${encodeURIComponent(searchQuery)}`));
       if (response.ok) {
         const data = await response.json();
         const mapped = data.map(doc => ({
@@ -70,7 +70,7 @@ const PatientDashboard = () => {
     
     setBooking(true);
     try {
-      const response = await fetch('/api/patient/appointment', {
+      const response = await fetch(apiUrl('/api/patient/appointment'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

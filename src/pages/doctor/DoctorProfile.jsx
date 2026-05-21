@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PageLayout from '../../components/PageLayout';
 import { User, Mail, ShieldCheck, Clock, Calendar, Hash, Save, Briefcase, Activity } from 'lucide-react';
-import { db, auth } from '../../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth } from '../../firebase';
+import { apiUrl } from '../../api';
 
 const DoctorProfile = () => {
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ const DoctorProfile = () => {
           return;
         }
 
-        const response = await fetch(`/api/doctor/profile/${savedUid}`);
+        const response = await fetch(apiUrl(`/api/doctor/profile/${savedUid}`));
         if (response.ok) {
           const data = await response.json();
           setProfileData({
@@ -85,7 +85,7 @@ const DoctorProfile = () => {
       const uid = auth.currentUser?.uid || localStorage.getItem('userUid') || profileData.uid;
       if (!uid) throw new Error("No UID found for saving profile");
 
-      const response = await fetch(`/api/doctor/profile/${uid}`, {
+      const response = await fetch(apiUrl(`/api/doctor/profile/${uid}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
