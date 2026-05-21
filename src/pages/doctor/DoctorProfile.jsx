@@ -241,43 +241,50 @@ const DoctorProfile = () => {
             </div>
 
             {/* Free Time */}
-            <div className="input-group" style={{ margin: 0 }}>
-              <label>Break Time (1 hour)</label>
-              <div className="input-wrapper" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0 1rem' }}>
-                <Calendar size={18} color="var(--text-light)" />
-                <select 
-                  name="freeTime"
-                  value={profileData.freeTime} 
-                  onChange={handleChange}
-                  style={{ border: 'none', background: 'transparent', padding: '0.75rem', width: '100%', outline: 'none', color: 'var(--text-dark)' }} 
-                >
-                  <option value="" disabled>Select a break slot</option>
-                  {profileData.shift === 'day' ? (
-                    <>
-                      <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
-                      <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
-                      <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
-                      <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
-                      <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
-                      <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
-                      <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
-                      <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
-                      <option value="5:00 PM - 6:00 PM">5:00 PM - 6:00 PM</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="9:00 PM - 10:00 PM">9:00 PM - 10:00 PM</option>
-                      <option value="10:00 PM - 11:00 PM">10:00 PM - 11:00 PM</option>
-                      <option value="11:00 PM - 12:00 AM">11:00 PM - 12:00 AM</option>
-                      <option value="12:00 AM - 1:00 AM">12:00 AM - 1:00 AM</option>
-                      <option value="1:00 AM - 2:00 AM">1:00 AM - 2:00 AM</option>
-                      <option value="2:00 AM - 3:00 AM">2:00 AM - 3:00 AM</option>
-                      <option value="3:00 AM - 4:00 AM">3:00 AM - 4:00 AM</option>
-                      <option value="4:00 AM - 5:00 AM">4:00 AM - 5:00 AM</option>
-                      <option value="5:00 AM - 6:00 AM">5:00 AM - 6:00 AM</option>
-                    </>
-                  )}
-                </select>
+            <div className="input-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
+              <label>Break Time (30 mins slots)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
+                {(profileData.shift === 'day' ? [
+                  '9:00 AM - 9:30 AM', '9:30 AM - 10:00 AM', '10:00 AM - 10:30 AM', '10:30 AM - 11:00 AM',
+                  '11:00 AM - 11:30 AM', '11:30 AM - 12:00 PM', '12:00 PM - 12:30 PM', '12:30 PM - 1:00 PM',
+                  '1:00 PM - 1:30 PM', '1:30 PM - 2:00 PM', '2:00 PM - 2:30 PM', '2:30 PM - 3:00 PM',
+                  '3:00 PM - 3:30 PM', '3:30 PM - 4:00 PM', '4:00 PM - 4:30 PM', '4:30 PM - 5:00 PM',
+                  '5:00 PM - 5:30 PM', '5:30 PM - 6:00 PM'
+                ] : [
+                  '9:00 PM - 9:30 PM', '9:30 PM - 10:00 PM', '10:00 PM - 10:30 PM', '10:30 PM - 11:00 PM',
+                  '11:00 PM - 11:30 PM', '11:30 PM - 12:00 AM', '12:00 AM - 12:30 AM', '12:30 AM - 1:00 AM',
+                  '1:00 AM - 1:30 AM', '1:30 AM - 2:00 AM', '2:00 AM - 2:30 AM', '2:30 AM - 3:00 AM',
+                  '3:00 AM - 3:30 AM', '3:30 AM - 4:00 AM', '4:00 AM - 4:30 AM', '4:30 AM - 5:00 AM',
+                  '5:00 AM - 5:30 AM', '5:30 AM - 6:00 AM'
+                ]).map(slot => {
+                  const isSelected = profileData.freeTime ? profileData.freeTime.split(', ').includes(slot) : false;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => {
+                        const currentSlots = profileData.freeTime ? profileData.freeTime.split(', ').filter(Boolean) : [];
+                        const newSlots = isSelected 
+                          ? currentSlots.filter(s => s !== slot)
+                          : [...currentSlots, slot];
+                        setProfileData(prev => ({ ...prev, freeTime: newSlots.join(', ') }));
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        border: `1px solid ${isSelected ? 'var(--primary)' : '#e2e8f0'}`,
+                        background: isSelected ? 'rgba(14, 165, 233, 0.1)' : 'white',
+                        color: isSelected ? 'var(--primary)' : 'var(--text-dark)',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
