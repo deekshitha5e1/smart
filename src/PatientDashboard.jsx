@@ -203,13 +203,24 @@ const PatientDashboard = () => {
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '500' }}>Time</label>
                     <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0 0.75rem' }}>
                       <Clock size={16} color="var(--text-light)" />
-                      <input 
-                        type="time" 
+                      <select 
                         required
                         value={appointmentTime}
                         onChange={(e) => setAppointmentTime(e.target.value)}
                         style={{ border: 'none', background: 'transparent', padding: '0.75rem', width: '100%', outline: 'none' }}
-                      />
+                      >
+                        <option value="" disabled>Select a time slot</option>
+                        {selectedDoctor && (selectedDoctor.shift === 'day' ? 
+                          ['9:00 AM - 10:00 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM', '12:00 PM - 1:00 PM', '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM', '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM']
+                          : 
+                          ['9:00 PM - 10:00 PM', '10:00 PM - 11:00 PM', '11:00 PM - 12:00 AM', '12:00 AM - 1:00 AM', '1:00 AM - 2:00 AM', '2:00 AM - 3:00 AM', '3:00 AM - 4:00 AM', '4:00 AM - 5:00 AM', '5:00 AM - 6:00 AM']
+                        ).filter(slot => {
+                          const freeSlots = selectedDoctor.freeTime ? selectedDoctor.freeTime.split(',').map(s => s.trim()) : [];
+                          return !freeSlots.includes(slot);
+                        }).map(slot => (
+                          <option key={slot} value={slot}>{slot}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

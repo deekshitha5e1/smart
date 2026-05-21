@@ -116,6 +116,10 @@ class DoctorProfileUpdate(BaseModel):
     free_time: Optional[str] = None
     patients_consulted: int = 0
 
+class FreeTimeUpdate(BaseModel):
+    doctorEmail: str
+    freeSlots: List[str]
+
 class DoctorResponse(BaseModel):
     uid: str
     email: str
@@ -280,6 +284,22 @@ def update_doctor_profile(uid: str, profile_update: DoctorProfileUpdate, db: Ses
     
     db.commit()
     return {"message": "Profile updated successfully"}
+
+# 3b. Update Doctor Free Time from Dashboard
+@app.post("/api/doctor/freetime")
+def update_doctor_freetime(req: FreeTimeUpdate, db: Session = Depends(get_db)):
+    user = db.query(UserDB).filter(UserDB.email == req.doctorEmail).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    doctor = db.query(DoctorDB).filter(DoctorDB.user_id == user.uid).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    
+    doctor.free_time = ", ".join(req.freeSlots) if req.freeSlots else ""
+    db.commit()
+    return {"message": "Free slots updated successfully"}
+
 
 # 4. Search Doctors
 @app.get("/api/doctors/search", response_model=List[DoctorResponse])

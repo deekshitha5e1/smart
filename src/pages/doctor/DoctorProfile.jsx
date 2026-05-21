@@ -242,7 +242,7 @@ const DoctorProfile = () => {
 
             {/* Free Time */}
             <div className="input-group" style={{ margin: 0 }}>
-              <label>Break Time (30 mins)</label>
+              <label>Break Time (1 hour)</label>
               <div className="input-wrapper" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0 1rem' }}>
                 <Calendar size={18} color="var(--text-light)" />
                 <select 
@@ -254,19 +254,27 @@ const DoctorProfile = () => {
                   <option value="" disabled>Select a break slot</option>
                   {profileData.shift === 'day' ? (
                     <>
-                      <option value="12:00 PM - 12:30 PM">12:00 PM - 12:30 PM</option>
-                      <option value="12:30 PM - 1:00 PM">12:30 PM - 1:00 PM</option>
-                      <option value="1:00 PM - 1:30 PM">1:00 PM - 1:30 PM</option>
-                      <option value="1:30 PM - 2:00 PM">1:30 PM - 2:00 PM</option>
-                      <option value="2:00 PM - 2:30 PM">2:00 PM - 2:30 PM</option>
+                      <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+                      <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                      <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                      <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
+                      <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+                      <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+                      <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+                      <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+                      <option value="5:00 PM - 6:00 PM">5:00 PM - 6:00 PM</option>
                     </>
                   ) : (
                     <>
-                      <option value="12:00 AM - 12:30 AM">12:00 AM - 12:30 AM</option>
-                      <option value="12:30 AM - 1:00 AM">12:30 AM - 1:00 AM</option>
-                      <option value="1:00 AM - 1:30 AM">1:00 AM - 1:30 AM</option>
-                      <option value="1:30 AM - 2:00 AM">1:30 AM - 2:00 AM</option>
-                      <option value="2:00 AM - 2:30 AM">2:00 AM - 2:30 AM</option>
+                      <option value="9:00 PM - 10:00 PM">9:00 PM - 10:00 PM</option>
+                      <option value="10:00 PM - 11:00 PM">10:00 PM - 11:00 PM</option>
+                      <option value="11:00 PM - 12:00 AM">11:00 PM - 12:00 AM</option>
+                      <option value="12:00 AM - 1:00 AM">12:00 AM - 1:00 AM</option>
+                      <option value="1:00 AM - 2:00 AM">1:00 AM - 2:00 AM</option>
+                      <option value="2:00 AM - 3:00 AM">2:00 AM - 3:00 AM</option>
+                      <option value="3:00 AM - 4:00 AM">3:00 AM - 4:00 AM</option>
+                      <option value="4:00 AM - 5:00 AM">4:00 AM - 5:00 AM</option>
+                      <option value="5:00 AM - 6:00 AM">5:00 AM - 6:00 AM</option>
                     </>
                   )}
                 </select>
