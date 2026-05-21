@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Mail, Lock, HeartPulse, ArrowRight, Activity, ShieldCheck, Stethoscope, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Signup from './Signup';
 import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, googleProvider, UserRole, db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, googleProvider, UserRole } from './firebase';
 import './App.css';
 
 function Login() {

@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, UserPlus, HeartPulse, Lock, Mail, User, ShieldCheck } from 'lucide-react';
-import { auth, db, UserRole } from './firebase';
+import { auth, UserRole } from './firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 
 const Signup = ({ onBack }) => {
   const [role, setRole] = useState(UserRole.PATIENT);

@@ -24,8 +24,12 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.laqrobzmpqkjmjulnhat:Deekshitha123%40@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 )
 
+# SQLAlchemy requires 'postgresql://' instead of 'postgres://' which is standard in Heroku/Railway/Supabase.
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # If they don't have PostgreSQL set up yet, fallback gracefully to SQLite so it doesn't crash
-if "postgresql" not in DATABASE_URL:
+if not DATABASE_URL or "postgresql" not in DATABASE_URL:
     print("WARNING: DATABASE_URL not set to PostgreSQL. Falling back to local SQLite database.")
     DATABASE_URL = "sqlite:///./hospital.db"
     connect_args = {"check_same_thread": False}

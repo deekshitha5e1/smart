@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PageLayout from '../../components/PageLayout';
 import { User, Mail, ShieldCheck, Clock, Calendar, Hash, Save, Briefcase, Activity } from 'lucide-react';
-import { db, auth } from '../../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth } from '../../firebase';
 
 const DoctorProfile = () => {
   const [loading, setLoading] = useState(true);

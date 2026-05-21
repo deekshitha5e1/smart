@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { LogOut, CalendarPlus, FileText, Pill, Activity, Search, User, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
+import { LogOut, CalendarPlus, FileText, Pill, Activity, Search, Calendar as CalendarIcon, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModuleCard from './components/ModuleCard';
-import { db, auth } from './firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from './firebase';
 
 const PatientDashboard = () => {
   const navigate = useNavigate();

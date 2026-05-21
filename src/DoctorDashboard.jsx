@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogOut, CalendarCheck, Users, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ModuleCard from './components/ModuleCard';

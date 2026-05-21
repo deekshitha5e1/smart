@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PageLayout from '../../components/PageLayout';
-import { db, auth } from '../../firebase';
-import { collection, query, where, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore';
-import { Check, X, Calendar, Clock, User, AlertCircle } from 'lucide-react';
+import { auth } from '../../firebase';
+import { Check, X, Calendar, Clock, User } from 'lucide-react';
 
 const AcceptAppointment = () => {
   const [appointments, setAppointments] = useState([]);
@@ -10,11 +9,7 @@ const AcceptAppointment = () => {
   
   const userUid = localStorage.getItem('userUid') || auth.currentUser?.uid;
 
-  useEffect(() => {
-    fetchAppointments();
-  }, [userUid]);
-
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     if (!userUid) {
       setLoading(false);
       return;
@@ -41,7 +36,12 @@ const AcceptAppointment = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userUid]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
