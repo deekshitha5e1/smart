@@ -8,7 +8,7 @@ load_dotenv(dotenv_path, override=True)
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Date, Time, ForeignKey, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Date, Time, ForeignKey, DateTime, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel
@@ -76,7 +76,7 @@ class DoctorDB(Base):
     hospital_id = Column(String(100), nullable=False)
     specialisation = Column(String(150), nullable=True)
     shift = Column(String(50), default="day") # 'day' or 'night'
-    free_time = Column(String(100), nullable=True)
+    free_time = Column(String(2000), nullable=True)
     patients_consulted = Column(Integer, default=0)
     status = Column(String(50), default="pending")
 
@@ -97,8 +97,13 @@ class AppointmentDB(Base):
 # Create tables in Database (if they don't exist yet)
 try:
     Base.metadata.create_all(bind=engine)
+    # Ensure free_time can hold multiple slots without truncation errors
+    with engine.begin() as conn:
+        # For Postgres (Supabase)
+        if "postgresql" in DATABASE_URL:
+            conn.execute(text("ALTER TABLE doctors ALTER COLUMN free_time TYPE VARCHAR(2000);"))
 except Exception as e:
-    print(f"Error creating tables: {e}. If this is Supabase, make sure your connection credentials are correct.")
+    print(f"Error creating/updating tables: {e}")
 
 # --- Pydantic Schemas ---
 
