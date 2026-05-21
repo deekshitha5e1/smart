@@ -336,9 +336,18 @@ def request_appointment(req: AppointmentCreate, db: Session = Depends(get_db)):
     # Parse date and time
     try:
         app_date = datetime.datetime.strptime(req.appointment_date, "%Y-%m-%d").date()
-        app_time = datetime.datetime.strptime(req.appointment_time, "%H:%M").time()
+        
+        # Extract start time from strings like "9:00 AM - 9:30 AM" or fallback to %H:%M
+        time_str = req.appointment_time.split(" - ")[0].strip()
+        
+        try:
+            app_time = datetime.datetime.strptime(time_str, "%I:%M %p").time()
+        except ValueError:
+            # Fallback if someone sends raw "HH:MM"
+            app_time = datetime.datetime.strptime(time_str, "%H:%M").time()
+            
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date or time format. Use YYYY-MM-DD and HH:MM.")
+        raise HTTPException(status_code=400, detail=f"Invalid date or time format: {req.appointment_time}")
 
     new_appointment = AppointmentDB(
         patient_id=req.patient_id,
