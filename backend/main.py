@@ -386,6 +386,31 @@ def get_doctor_appointments(doctor_uid: str, db: Session = Depends(get_db)):
             
     return appointments_list
 
+# 5b. Fetch Patient's Appointment Requests
+@app.get("/api/patient/{patient_uid}/appointments", response_model=List[AppointmentResponse])
+def get_patient_appointments(patient_uid: str, db: Session = Depends(get_db)):
+    results = db.query(AppointmentDB).filter(AppointmentDB.patient_id == patient_uid).all()
+    
+    appointments_list = []
+    for appt in results:
+        patient = db.query(UserDB).filter(UserDB.uid == appt.patient_id).first()
+        doctor = db.query(UserDB).filter(UserDB.uid == appt.doctor_id).first()
+        
+        if patient and doctor:
+            appointments_list.append(AppointmentResponse(
+                id=appt.id,
+                patient_id=appt.patient_id,
+                patient_name=patient.full_name,
+                patient_email=patient.email,
+                doctor_id=appt.doctor_id,
+                doctor_name=doctor.full_name,
+                appointment_date=appt.appointment_date,
+                appointment_time=appt.appointment_time,
+                status=appt.status
+            ))
+            
+    return appointments_list
+
 # 6. Accept / Decline Appointment
 @app.put("/api/appointment/{appointment_id}/status")
 def update_appointment_status(appointment_id: int, status: str, db: Session = Depends(get_db)):
