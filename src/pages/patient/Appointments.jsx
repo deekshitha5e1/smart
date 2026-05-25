@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageLayout from '../../components/PageLayout';
 import { auth } from '../../firebase';
-import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope } from 'lucide-react';
+import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PatientAppointments = () => {
@@ -14,6 +14,12 @@ const PatientAppointments = () => {
   const [timePeriod, setTimePeriod] = useState('all'); // 'all', 'previous', 'present', 'future'
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState(['pending', 'accepted', 'rejected']);
+
+  // Hover states
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [hoveredReset, setHoveredReset] = useState(false);
+  const [hoveredFilterHeader, setHoveredFilterHeader] = useState(false);
+  const [hoveredCancelBtn, setHoveredCancelBtn] = useState(null);
 
   const userUid = localStorage.getItem('userUid') || auth.currentUser?.uid;
 
@@ -31,7 +37,7 @@ const PatientAppointments = () => {
         const mapped = data.map(app => ({
           id: app.id,
           doctorName: app.doctor_name,
-          doctorEmail: app.doctor_email, // If backend returns it, else we fallback
+          doctorEmail: app.doctor_email,
           date: app.appointment_date,
           time: app.appointment_time,
           status: app.status
@@ -50,6 +56,27 @@ const PatientAppointments = () => {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  // Cancel Pending Appointment (updates status to 'rejected' via API)
+  const handleCancelAppointment = async (id) => {
+    const confirmCancel = window.confirm("Are you sure you want to cancel this appointment request?");
+    if (!confirmCancel) return;
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${API_URL}/api/appointment/${id}/status?status=rejected`, {
+        method: 'PUT'
+      });
+
+      if (!response.ok) throw new Error("Failed to cancel appointment");
+
+      // Optimistically update the UI
+      setAppointments(prev => prev.map(app => app.id === id ? { ...app, status: 'rejected' } : app));
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment.");
+    }
+  };
 
   // Helper to get formatted local date (YYYY-MM-DD)
   const getTodayStr = () => {
@@ -75,14 +102,11 @@ const PatientAppointments = () => {
       } else if (timePeriod === 'future') {
         if (app.date <= todayStr) return false;
       } else if (timePeriod === 'present') {
-        // "Present" defaults to today's date if no specific selectedDate is provided, 
-        // otherwise it filters to that specific selectedDate.
         const targetDate = selectedDate || todayStr;
         if (app.date !== targetDate) return false;
       }
 
-      // 3. Custom Date Filter (if selectedDate is set and we're not in 'present' mode, 
-      // or if we are in present mode and selectedDate is set, it's already handled)
+      // 3. Custom Date Filter
       if (selectedDate && timePeriod !== 'present') {
         if (app.date !== selectedDate) return false;
       }
@@ -109,120 +133,177 @@ const PatientAppointments = () => {
 
   return (
     <PageLayout title="My Appointments" backPath="/patient">
-      <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ maxWidth: '950px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
+        
+        {/* Header Section */}
+        <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.75rem', color: 'var(--text-dark)', marginBottom: '0.5rem', marginTop: 0 }}>Appointment Status & History</h2>
-            <p style={{ color: 'var(--text-light)', margin: 0 }}>View your requested, accepted, or completed appointment consultations.</p>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: '700', color: 'var(--text-dark)', marginBottom: '0.5rem', marginTop: 0, fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>
+              My Consultations
+            </h2>
+            <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '1rem', fontWeight: '400' }}>
+              Monitor appointment approvals, history, and scheduled clinical visits.
+            </p>
           </div>
           <button 
             onClick={() => navigate('/patient')}
             style={{
-              background: 'var(--primary)',
+              background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
               color: 'white',
               border: 'none',
-              padding: '0.75rem 1.25rem',
-              borderRadius: '10px',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
               cursor: 'pointer',
               fontWeight: '600',
               fontSize: '0.9rem',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 6px rgba(14, 165, 233, 0.15)'
+              transition: 'all 0.3s',
+              boxShadow: '0 4px 15px rgba(14, 165, 233, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
             }}
-            onMouseEnter={e => e.currentTarget.style.opacity = 0.9}
-            onMouseLeave={e => e.currentTarget.style.opacity = 1}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(14, 165, 233, 0.35)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(14, 165, 233, 0.25)';
+            }}
           >
-            Request New Visit
+            <HeartPulse size={16} /> Request Consultation
           </button>
         </div>
 
-        {/* Dynamic Expandable Filter Panel */}
+        {/* Premium Glassmorphic Filter Panel */}
         <div style={{ 
-          background: 'white', 
-          borderRadius: '16px', 
-          border: '1px solid #e2e8f0', 
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)',
-          marginBottom: '1.5rem',
+          background: 'var(--glass-bg)', 
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: '20px', 
+          border: '1px solid var(--glass-border)', 
+          boxShadow: hoveredFilterHeader ? '0 10px 25px -5px rgba(15, 23, 42, 0.08)' : '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
+          marginBottom: '2rem',
           overflow: 'hidden',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
           {/* Header Panel */}
-          <div style={{ 
-            padding: '1rem 1.5rem', 
-            background: '#f8fafc', 
-            borderBottom: '1px solid #e2e8f0',
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            cursor: 'pointer'
-          }} onClick={() => setShowFilters(!showFilters)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)' }}>
+          <div 
+            style={{ 
+              padding: '1.25rem 1.75rem', 
+              background: 'rgba(248, 250, 252, 0.6)', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              cursor: 'pointer',
+              userSelect: 'none'
+            }} 
+            onClick={() => setShowFilters(!showFilters)}
+            onMouseEnter={() => setHoveredFilterHeader(true)}
+            onMouseLeave={() => setHoveredFilterHeader(false)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                width: '36px', 
+                height: '36px', 
+                borderRadius: '10px', 
+                background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', 
+                color: 'white',
+                boxShadow: '0 4px 10px rgba(14, 165, 233, 0.3)'
+              }}>
                 <Filter size={16} />
               </div>
-              <span style={{ fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.95rem' }}>Filter Appointments</span>
-              {isFiltersModified && (
-                <span style={{ background: 'var(--primary)', color: 'white', padding: '0.15rem 0.5rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                  Active
+              <div>
+                <span style={{ fontWeight: '700', color: 'var(--text-dark)', fontSize: '1rem', display: 'block' }}>Filter Console</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', display: 'block', marginTop: '0.1rem' }}>
+                  {isFiltersModified ? 'Custom filters active' : 'Showing all requests'}
                 </span>
-              )}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }} onClick={e => e.stopPropagation()}>
+              {/* Quick status mini pills */}
+              {!showFilters && (
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }} className="hide-on-mobile">
+                  <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: 'var(--text-dark)', padding: '0.25rem 0.6rem', borderRadius: '20px', fontWeight: '600', textTransform: 'capitalize' }}>
+                    Period: {timePeriod}
+                  </span>
+                  {selectedDate && (
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', padding: '0.25rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>
+                      Date: {selectedDate}
+                    </span>
+                  )}
+                  {selectedStatuses.length < 3 && (
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--secondary)', padding: '0.25rem 0.6rem', borderRadius: '20px', fontWeight: '600' }}>
+                      Status: {selectedStatuses.join(', ')}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {isFiltersModified && (
                 <button 
                   onClick={handleResetFilters}
+                  onMouseEnter={() => setHoveredReset(true)}
+                  onMouseLeave={() => setHoveredReset(false)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.25rem',
-                    background: 'transparent',
+                    gap: '0.35rem',
+                    background: hoveredReset ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
                     border: 'none',
-                    color: 'var(--text-light)',
+                    color: hoveredReset ? '#ef4444' : 'var(--text-light)',
                     fontSize: '0.85rem',
                     cursor: 'pointer',
-                    fontWeight: '500',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '6px',
-                    transition: 'all 0.2s'
+                    fontWeight: '600',
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    outline: 'none'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-light)'}
                 >
-                  <RotateCcw size={12} /> Reset
+                  <RotateCcw size={13} style={{ transform: hoveredReset ? 'rotate(-180deg)' : 'none', transition: 'transform 0.4s' }} /> Reset
                 </button>
               )}
               <button 
                 onClick={() => setShowFilters(!showFilters)}
                 style={{
-                  background: 'none',
+                  background: 'rgba(15, 23, 42, 0.05)',
                   border: 'none',
-                  color: 'var(--text-light)',
+                  color: 'var(--text-dark)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '0.25rem'
+                  padding: '0.4rem',
+                  borderRadius: '50%',
+                  transition: 'background 0.2s'
                 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.08)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(15, 23, 42, 0.05)'}
               >
-                {showFilters ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
             </div>
           </div>
 
-          {/* Filter Body with Slide Animation styling */}
+          {/* Filter Console Panel Body */}
           <div style={{
-            maxHeight: showFilters ? '500px' : '0px',
+            maxHeight: showFilters ? '600px' : '0px',
             opacity: showFilters ? 1 : 0,
-            transition: 'all 0.3s ease-in-out',
-            padding: showFilters ? '1.5rem' : '0 1.5rem',
-            borderTop: showFilters ? '1px solid #f1f5f9' : 'none'
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            padding: showFilters ? '1.75rem' : '0 1.75rem',
+            borderTop: showFilters ? '1px solid rgba(226, 232, 240, 0.8)' : 'none',
+            background: 'rgba(255, 255, 255, 0.4)'
           }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '2rem' }}>
               
-              {/* Time Period Filter */}
+              {/* 1. Time Period Selector */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '600', color: 'var(--text-dark)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Time Period
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Time Interval
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {[
@@ -239,53 +320,69 @@ const PatientAppointments = () => {
                         style={{
                           width: '100%',
                           textAlign: 'left',
-                          padding: '0.6rem 1rem',
+                          padding: '0.65rem 1rem',
                           borderRadius: '10px',
-                          border: isSelected ? '1px solid var(--primary)' : '1px solid #e2e8f0',
-                          background: isSelected ? 'rgba(14, 165, 233, 0.06)' : 'white',
-                          color: isSelected ? 'var(--primary)' : 'var(--text-dark)',
-                          fontWeight: isSelected ? '600' : '400',
-                          fontSize: '0.875rem',
+                          border: isSelected ? '1.5px solid var(--primary)' : '1px solid #e2e8f0',
+                          background: isSelected ? 'linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.02))' : 'white',
+                          color: isSelected ? 'var(--primary-dark)' : 'var(--text-dark)',
+                          fontWeight: isSelected ? '600' : '500',
+                          fontSize: '0.85rem',
                           cursor: 'pointer',
                           transition: 'all 0.2s',
+                          boxShadow: isSelected ? '0 4px 12px rgba(14, 165, 233, 0.05)' : 'none',
+                          transform: isSelected ? 'translateX(2px)' : 'none',
                           outline: 'none'
                         }}
                       >
-                        {period.label}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>{period.label}</span>
+                          {isSelected && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)' }} />}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Date Filter */}
+              {/* 2. Custom Date Picker */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '600', color: 'var(--text-dark)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Filter by Specific Date
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Calendar Date Target
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <div style={{ position: 'relative' }}>
                     <input 
                       type="date" 
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '0.65rem 1rem',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '10px',
-                        fontSize: '0.875rem',
+                        padding: '0.75rem 1rem',
+                        border: '1.5px solid',
+                        borderColor: selectedDate ? 'var(--primary)' : '#e2e8f0',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
                         color: 'var(--text-dark)',
                         outline: 'none',
-                        background: selectedDate ? 'rgba(14, 165, 233, 0.02)' : 'white',
-                        borderColor: selectedDate ? 'var(--primary)' : '#e2e8f0'
+                        background: 'white',
+                        transition: 'all 0.2s',
+                        boxShadow: selectedDate ? '0 4px 12px rgba(14, 165, 233, 0.05)' : 'none',
+                        fontFamily: 'inherit'
                       }}
                     />
                   </div>
                   {timePeriod === 'present' && !selectedDate && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '500', background: 'rgba(14, 165, 233, 0.08)', padding: '0.35rem 0.65rem', borderRadius: '6px' }}>
-                      💡 Present mode is currently defaulting to Today: <strong>{getTodayStr()}</strong>. You can change this using the date picker above.
-                    </span>
+                    <div style={{ 
+                      fontSize: '0.75rem', 
+                      color: 'var(--primary-dark)', 
+                      background: 'rgba(14, 165, 233, 0.06)', 
+                      padding: '0.5rem 0.85rem', 
+                      borderRadius: '10px', 
+                      lineHeight: '1.4',
+                      borderLeft: '3px solid var(--primary)'
+                    }}>
+                      💡 Present mode default today: <strong>{getTodayStr()}</strong>. Select another date above to shift focus.
+                    </div>
                   )}
                   {selectedDate && (
                     <button
@@ -295,30 +392,35 @@ const PatientAppointments = () => {
                         background: '#f1f5f9',
                         border: 'none',
                         color: 'var(--text-dark)',
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: '6px',
+                        padding: '0.4rem 0.85rem',
+                        borderRadius: '8px',
                         fontSize: '0.75rem',
-                        fontWeight: '500',
+                        fontWeight: '600',
                         cursor: 'pointer',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
                     >
-                      Clear Date Filter
+                      <X size={12} /> Clear Date Target
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Status Filter */}
+              {/* 3. Status Filters */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '600', color: 'var(--text-dark)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Appointment Status
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   {[
-                    { id: 'pending', label: 'Pending Request', color: '#b45309', bg: '#fef3c7' },
-                    { id: 'accepted', label: 'Accepted', color: '#047857', bg: '#d1fae5' },
-                    { id: 'rejected', label: 'Declined / Rejected', color: '#b91c1c', bg: '#fee2e2' }
+                    { id: 'pending', label: 'Pending Approval', color: '#d97706', activeBg: 'rgba(254, 243, 199, 0.8)', border: '#fef3c7' },
+                    { id: 'accepted', label: 'Accepted & Confirmed', color: '#059669', activeBg: 'rgba(209, 250, 229, 0.8)', border: '#d1fae5' },
+                    { id: 'rejected', label: 'Declined / Cancelled', color: '#dc2626', activeBg: 'rgba(254, 226, 226, 0.8)', border: '#fee2e2' }
                   ].map(status => {
                     const isChecked = selectedStatuses.includes(status.id);
                     return (
@@ -329,28 +431,30 @@ const PatientAppointments = () => {
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.75rem',
-                          padding: '0.6rem 1rem',
-                          borderRadius: '10px',
-                          border: isChecked ? `1px solid ${status.color}` : '1px solid #e2e8f0',
-                          background: isChecked ? status.bg : 'white',
+                          padding: '0.65rem 1rem',
+                          borderRadius: '12px',
+                          border: '1.5px solid',
+                          borderColor: isChecked ? status.color : '#e2e8f0',
+                          background: isChecked ? status.activeBg : 'white',
                           color: isChecked ? status.color : 'var(--text-dark)',
-                          fontWeight: isChecked ? '600' : '400',
-                          fontSize: '0.875rem',
+                          fontWeight: isChecked ? '600' : '500',
+                          fontSize: '0.85rem',
                           cursor: 'pointer',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          boxShadow: isChecked ? `0 4px 12px ${status.border}` : 'none'
                         }}
                       >
                         <div style={{ 
-                          width: '16px', 
-                          height: '16px', 
-                          borderRadius: '4px', 
-                          border: `1.5px solid ${isChecked ? status.color : '#cbd5e1'}`, 
+                          width: '18px', 
+                          height: '18px', 
+                          borderRadius: '6px', 
+                          border: `2px solid ${isChecked ? status.color : '#cbd5e1'}`, 
                           background: isChecked ? status.color : 'transparent',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: 'white',
-                          fontSize: '10px'
+                          transition: 'all 0.2s'
                         }}>
                           {isChecked && <Check size={12} strokeWidth={3} />}
                         </div>
@@ -365,38 +469,57 @@ const PatientAppointments = () => {
           </div>
         </div>
 
+        {/* Info row */}
+        {!loading && filteredAppointments.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', padding: '0 0.25rem' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-light)', fontWeight: '500' }}>
+              Showing <strong>{filteredAppointments.length}</strong> of <strong>{appointments.length}</strong> scheduled visits
+            </span>
+          </div>
+        )}
+
         {/* Main List */}
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--text-light)', fontWeight: '500' }}>Loading appointments...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 0', gap: '1rem' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid rgba(14, 165, 233, 0.1)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+            <p style={{ color: 'var(--text-light)', fontWeight: '600', fontSize: '0.95rem' }}>Loading appointments from Supabase...</p>
           </div>
         ) : filteredAppointments.length === 0 ? (
-          <div style={{ background: 'white', padding: '4rem 2rem', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', border: '1px solid #f1f5f9' }}>
-            <Calendar size={48} color="#cbd5e1" style={{ margin: '0 auto 1.5rem' }} />
-            <h3 style={{ color: 'var(--text-dark)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>
-              {appointments.length === 0 ? 'No Appointments Found' : 'No Matching Appointments'}
+          <div style={{ 
+            background: 'white', 
+            padding: '5rem 2rem', 
+            borderRadius: '24px', 
+            textAlign: 'center', 
+            boxShadow: '0 10px 30px -10px rgba(15, 23, 42, 0.04)', 
+            border: '1px solid rgba(226, 232, 240, 0.8)' 
+          }}>
+            <Calendar size={56} color="#cbd5e1" style={{ margin: '0 auto 1.5rem', opacity: 0.8 }} />
+            <h3 style={{ color: 'var(--text-dark)', fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', fontFamily: "'Outfit', sans-serif" }}>
+              {appointments.length === 0 ? 'No Appointments Yet' : 'No Matching Appointments'}
             </h3>
-            <p style={{ color: 'var(--text-light)', maxWidth: '400px', margin: '0 auto 1.5rem', fontSize: '0.95rem' }}>
+            <p style={{ color: 'var(--text-light)', maxWidth: '440px', margin: '0 auto 2rem', fontSize: '0.95rem', lineHeight: '1.6' }}>
               {appointments.length === 0 
-                ? "You haven't requested any medical appointments yet. Search for a specialist to get started." 
-                : "No appointments match your current filter settings. Try resetting or adjusting the filters."
+                ? "You haven't requested any medical appointments yet. Search for a specialist to book your first clinical consultation." 
+                : "No appointments match your active filters. Try resetting or adjusting the console parameters."
               }
             </p>
             {appointments.length === 0 ? (
               <button 
                 onClick={() => navigate('/patient')}
                 style={{ 
-                  background: 'var(--primary)', 
+                  background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', 
                   color: 'white', 
                   border: 'none', 
-                  padding: '0.65rem 1.25rem', 
-                  borderRadius: '8px', 
+                  padding: '0.75rem 1.75rem', 
+                  borderRadius: '12px', 
                   cursor: 'pointer', 
                   fontWeight: '600',
-                  fontSize: '0.875rem',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 4px 6px rgba(14, 165, 233, 0.15)'
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 15px rgba(14, 165, 233, 0.2)'
                 }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}
               >
                 Find a Specialist
               </button>
@@ -404,75 +527,171 @@ const PatientAppointments = () => {
               <button 
                 onClick={handleResetFilters}
                 style={{ 
-                  background: 'var(--primary)', 
+                  background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', 
                   color: 'white', 
                   border: 'none', 
-                  padding: '0.65rem 1.25rem', 
-                  borderRadius: '8px', 
+                  padding: '0.75rem 1.75rem', 
+                  borderRadius: '12px', 
                   cursor: 'pointer', 
                   fontWeight: '600',
-                  fontSize: '0.875rem',
-                  transition: 'all 0.2s'
+                  fontSize: '0.9rem',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)'
                 }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}
               >
-                Reset Filters
+                Clear All Filters
               </button>
             ) : null}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-light)', fontWeight: '500' }}>
-                Showing <strong>{filteredAppointments.length}</strong> of <strong>{appointments.length}</strong> appointments
-              </span>
-            </div>
-            
-            {filteredAppointments.map(app => (
-              <div key={app.id} style={{ 
-                background: 'white', 
-                borderRadius: '16px', 
-                padding: '1.5rem', 
-                boxShadow: '0 2px 4px rgba(0,0,0,0.01)',
-                border: '1px solid #f1f5f9',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                animation: 'slideUp 0.3s ease-out'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 'bold' }}>
-                      <Stethoscope size={22} />
-                    </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-dark)' }}>Dr. {app.doctorName}</h4>
-                      <p style={{ margin: 0, color: 'var(--text-light)', fontSize: '0.875rem' }}>Primary Care Consultant</p>
-                    </div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '1.5rem', background: '#f8fafc', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dark)', fontWeight: '500' }}>
-                      <Calendar size={18} color="var(--primary)" /> {app.date}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dark)', fontWeight: '500' }}>
-                      <Clock size={18} color="#f59e0b" /> {app.time}
-                    </div>
-                  </div>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {filteredAppointments.map(app => {
+              const isHovered = hoveredCard === app.id;
+              
+              // Status Badge details
+              let statusBg = '';
+              let statusText = '';
+              let statusBorder = '';
+              if (app.status === 'pending') {
+                statusBg = 'rgba(254, 243, 199, 0.7)';
+                statusText = '#d97706';
+                statusBorder = '#fef3c7';
+              } else if (app.status === 'accepted') {
+                statusBg = 'rgba(209, 250, 229, 0.7)';
+                statusText = '#059669';
+                statusBorder = '#d1fae5';
+              } else {
+                statusBg = 'rgba(254, 226, 226, 0.7)';
+                statusText = '#dc2626';
+                statusBorder = '#fee2e2';
+              }
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-dark)' }}>Status:</span>
-                    {app.status === 'pending' && <span style={{ background: '#fef3c7', color: '#b45309', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Pending Approval</span>}
-                    {app.status === 'accepted' && <span style={{ background: '#d1fae5', color: '#047857', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Accepted & Confirmed</span>}
-                    {app.status === 'rejected' && <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '600' }}>Declined</span>}
+              return (
+                <div 
+                  key={app.id} 
+                  onMouseEnter={() => setHoveredCard(app.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{ 
+                    background: 'white', 
+                    borderRadius: '20px', 
+                    padding: '1.75rem', 
+                    boxShadow: isHovered ? '0 12px 24px -6px rgba(15, 23, 42, 0.06)' : '0 4px 12px -2px rgba(15, 23, 42, 0.02)',
+                    border: isHovered ? '1px solid rgba(14, 165, 233, 0.2)' : '1px solid rgba(226, 232, 240, 0.8)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.25rem',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    animation: 'slideUp 0.4s ease-out'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+                    <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                      <div style={{ 
+                        width: '52px', 
+                        height: '52px', 
+                        borderRadius: '16px', 
+                        background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(14, 165, 233, 0.05))', 
+                        color: 'var(--primary)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        fontSize: '1.4rem', 
+                        boxShadow: '0 4px 10px rgba(14, 165, 233, 0.05)'
+                      }}>
+                        <Stethoscope size={24} />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-dark)', fontFamily: "'Outfit', sans-serif" }}>
+                          Dr. {app.doctorName}
+                        </h4>
+                        <p style={{ margin: '0.2rem 0 0', color: 'var(--text-light)', fontSize: '0.875rem' }}>
+                          CarePulse Medical Consultant
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Date and Time Badges */}
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.6rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0', color: 'var(--text-dark)', fontWeight: '600', fontSize: '0.85rem' }}>
+                        <Calendar size={16} color="var(--primary)" /> {app.date}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.6rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0', color: 'var(--text-dark)', fontWeight: '600', fontSize: '0.85rem' }}>
+                        <Clock size={16} color="#d97706" /> {app.time}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status:</span>
+                      <span style={{ 
+                        background: statusBg, 
+                        color: statusText, 
+                        border: `1px solid ${statusBorder}`,
+                        padding: '0.35rem 1rem', 
+                        borderRadius: '20px', 
+                        fontSize: '0.75rem', 
+                        fontWeight: '700',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        boxShadow: `0 2px 8px ${statusBorder}`
+                      }}>
+                        {app.status === 'pending' ? 'Pending Approval' : app.status === 'accepted' ? 'Accepted & Confirmed' : 'Declined / Cancelled'}
+                      </span>
+                    </div>
+
+                    {app.status === 'pending' && (
+                      <button
+                        onClick={() => handleCancelAppointment(app.id)}
+                        onMouseEnter={() => setHoveredCancelBtn(app.id)}
+                        onMouseLeave={() => setHoveredCancelBtn(null)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          background: hoveredCancelBtn === app.id ? 'rgba(239, 68, 68, 0.05)' : 'white',
+                          color: '#ef4444',
+                          border: '1.5px solid #fca5a5',
+                          padding: '0.5rem 1.2rem',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.85rem',
+                          transition: 'all 0.2s',
+                          boxShadow: hoveredCancelBtn === app.id ? '0 4px 10px rgba(239, 68, 68, 0.08)' : 'none'
+                        }}
+                      >
+                        <X size={14} /> Cancel Request
+                      </button>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Dynamic animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 600px) {
+          .hide-on-mobile {
+            display: none !important;
+          }
+        }
+      `}} />
     </PageLayout>
   );
 };
