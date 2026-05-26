@@ -66,7 +66,17 @@ const ManagePrescriptions = () => {
         const data = await response.json();
         // Filter appointments that are accepted or completed
         const activeAppts = data.filter(appt => appt.status === 'accepted');
-        setAppointments(activeAppts);
+        // Map fields properly for the dropdown selection
+        const mapped = activeAppts.map(appt => ({
+          id: appt.id,
+          patient_id: appt.patient_id,
+          patientName: appt.patient_name,
+          patientEmail: appt.patient_email,
+          date: appt.appointment_date,
+          time: appt.appointment_time,
+          status: appt.status
+        }));
+        setAppointments(mapped);
       }
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -510,7 +520,7 @@ const ManagePrescriptions = () => {
                           <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                             <th style={{ padding: '0.6rem 1rem', color: 'var(--text-dark)', fontWeight: '600' }}>Medicine Name</th>
                             <th style={{ padding: '0.6rem 1rem', color: 'var(--text-dark)', fontWeight: '600' }}>Dosage Instructions</th>
-                            <th style={{ padding: '0.6rem 1rem', color: 'var(--text-dark)', fontWeight: '600' }}>Duration</th>
+                            <th style={{ padding: '0.6rem 1rem', color: 'var(--text-dark)', fontWeight: '600' }}>Tablets Per Day</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -630,7 +640,7 @@ const ManagePrescriptions = () => {
                         <option value="">-- Choose an appointment --</option>
                         {appointments.map(appt => (
                           <option key={appt.id} value={appt.id}>
-                            {appt.patientName} ({appt.patientEmail}) - {appt.date}
+                            {appt.patientName} ({appt.patientEmail}) - Date: {appt.date} at {appt.time}
                           </option>
                         ))}
                       </select>
@@ -736,7 +746,7 @@ const ManagePrescriptions = () => {
                           <input 
                             type="text" 
                             required
-                            placeholder="Duration (e.g. 5 days)"
+                            placeholder="Tablets Per Day (e.g. 2 tablets)"
                             value={med.duration}
                             onChange={(e) => handleMedicineChange(idx, 'duration', e.target.value)}
                             style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}

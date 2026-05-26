@@ -214,18 +214,6 @@ const Prescriptions = () => {
                       <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary-dark)', fontFamily: "'Outfit', sans-serif" }}>
                         CarePulse Hospital
                       </h3>
-                      <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-light)' }}>
-                        75, Wellness Blvd, Sector 5, Medical District
-                      </p>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: '800', background: 'rgba(14, 165, 233, 0.08)', color: 'var(--primary-dark)', padding: '0.3rem 0.75rem', borderRadius: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Digital RX Slip
-                      </span>
-                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-light)', fontFamily: 'monospace' }}>
-                        ID: #RX-00{presc.id}
-                      </p>
                     </div>
                   </div>
 
@@ -268,7 +256,7 @@ const Prescriptions = () => {
                           <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                             <th style={{ padding: '0.8rem 1.25rem', color: 'var(--text-dark)', fontWeight: '700' }}>Medicine Name</th>
                             <th style={{ padding: '0.8rem 1.25rem', color: 'var(--text-dark)', fontWeight: '700' }}>Dosage Instructions</th>
-                            <th style={{ padding: '0.8rem 1.25rem', color: 'var(--text-dark)', fontWeight: '700' }}>Duration</th>
+                            <th style={{ padding: '0.8rem 1.25rem', color: 'var(--text-dark)', fontWeight: '700' }}>Tablets Per Day</th>
                           </tr>
                         </thead>
                         <tbody>
