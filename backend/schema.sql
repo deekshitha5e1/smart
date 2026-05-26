@@ -63,3 +63,24 @@ CREATE TABLE appointments (
 CREATE INDEX idx_appointments_doctor ON appointments(doctor_id);
 CREATE INDEX idx_appointments_patient ON appointments(patient_id);
 CREATE INDEX idx_doctors_specialisation ON doctors(specialisation);
+
+-- =======================================================
+-- 6. PRESCRIPTIONS TABLE
+-- Stores digital prescriptions issued by doctors.
+-- =======================================================
+CREATE TABLE prescriptions (
+    id SERIAL PRIMARY KEY,
+    doctor_id VARCHAR(255) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+    patient_id VARCHAR(255) REFERENCES users(uid) ON DELETE SET NULL,
+    patient_name VARCHAR(255) NOT NULL,
+    patient_email VARCHAR(255),
+    diagnosis TEXT NOT NULL,
+    medicines TEXT NOT NULL, -- Serialized JSON array of medicine objects (name, dosage, duration)
+    additional_recommendations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_prescriptions_doctor ON prescriptions(doctor_id);
+CREATE INDEX idx_prescriptions_patient ON prescriptions(patient_id);
+

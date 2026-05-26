@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel
 from typing import Optional, List
 import datetime
+import json
 
 # --- Load Environment Variables ---
 # Fallback to local SQLite if DATABASE_URL is not set. 
@@ -94,6 +95,20 @@ class AppointmentDB(Base):
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+class PrescriptionDB(Base):
+    __tablename__ = "prescriptions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    doctor_id = Column(String, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(String, ForeignKey("users.uid", ondelete="SET NULL"), nullable=True)
+    patient_name = Column(String, nullable=False)
+    patient_email = Column(String, nullable=True)
+    diagnosis = Column(String, nullable=False)
+    medicines = Column(String, nullable=False) # JSON list
+    additional_recommendations = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
 # Create tables in Database (if they don't exist yet)
 try:
     Base.metadata.create_all(bind=engine)
@@ -152,6 +167,35 @@ class AppointmentResponse(BaseModel):
     appointment_date: datetime.date
     appointment_time: datetime.time
     status: str
+
+    class Config:
+        from_attributes = True
+
+class MedicineItem(BaseModel):
+    name: str
+    dosage: str
+    duration: str
+
+class PrescriptionCreate(BaseModel):
+    patient_id: Optional[str] = None
+    patient_name: str
+    patient_email: Optional[str] = None
+    diagnosis: str
+    medicines: List[MedicineItem]
+    additional_recommendations: Optional[str] = None
+
+class PrescriptionResponse(BaseModel):
+    id: int
+    doctor_id: str
+    doctor_name: str
+    patient_id: Optional[str] = None
+    patient_name: str
+    patient_email: Optional[str] = None
+    diagnosis: str
+    medicines: List[MedicineItem]
+    additional_recommendations: Optional[str] = None
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
 
     class Config:
         from_attributes = True
@@ -424,3 +468,157 @@ def update_appointment_status(appointment_id: int, status: str, db: Session = De
     appt.status = status
     db.commit()
     return {"message": f"Appointment status updated to {status}"}
+
+# --- Prescription Endpoints ---
+
+# 1. Create Prescription
+@app.post("/api/prescriptions")
+def create_prescription(req: PrescriptionCreate, doctor_uid: str, db: Session = Depends(get_db)):
+    doctor = db.query(UserDB).filter(UserDB.uid == doctor_uid, UserDB.role == "doctor").first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+        
+    medicines_str = json.dumps([m.dict() for m in req.medicines])
+    
+    new_presc = PrescriptionDB(
+        doctor_id=doctor_uid,
+        patient_id=req.patient_id,
+        patient_name=req.patient_name,
+        patient_email=req.patient_email,
+        diagnosis=req.diagnosis,
+        medicines=medicines_str,
+        additional_recommendations=req.additional_recommendations
+    )
+    db.add(new_presc)
+    db.commit()
+    db.refresh(new_presc)
+    return {"message": "Prescription created successfully", "prescription_id": new_presc.id}
+
+# 2. Update Prescription
+@app.put("/api/prescriptions/{prescription_id}")
+def update_prescription(prescription_id: int, req: PrescriptionCreate, doctor_uid: str, db: Session = Depends(get_db)):
+    presc = db.query(PrescriptionDB).filter(PrescriptionDB.id == prescription_id).first()
+    if not presc:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    if presc.doctor_id != doctor_uid:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this prescription")
+        
+    medicines_str = json.dumps([m.dict() for m in req.medicines])
+    
+    presc.patient_id = req.patient_id
+    presc.patient_name = req.patient_name
+    presc.patient_email = req.patient_email
+    presc.diagnosis = req.diagnosis
+    presc.medicines = medicines_str
+    presc.additional_recommendations = req.additional_recommendations
+    presc.updated_at = datetime.datetime.utcnow()
+    
+    db.commit()
+    return {"message": "Prescription updated successfully"}
+
+# 3. Get Doctor's Prescriptions
+@app.get("/api/doctor/{doctor_uid}/prescriptions")
+def get_doctor_prescriptions(doctor_uid: str, db: Session = Depends(get_db)):
+    prescriptions = db.query(PrescriptionDB).filter(PrescriptionDB.doctor_id == doctor_uid).order_by(PrescriptionDB.created_at.desc()).all()
+    
+    results = []
+    for presc in prescriptions:
+        doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
+        doc_name = doc.full_name if doc else "Doctor"
+        
+        try:
+            meds = json.loads(presc.medicines)
+        except Exception:
+            meds = []
+            
+        results.append({
+            "id": presc.id,
+            "doctor_id": presc.doctor_id,
+            "doctor_name": doc_name,
+            "patient_id": presc.patient_id,
+            "patient_name": presc.patient_name,
+            "patient_email": presc.patient_email,
+            "diagnosis": presc.diagnosis,
+            "medicines": meds,
+            "additional_recommendations": presc.additional_recommendations,
+            "created_at": presc.created_at.isoformat(),
+            "updated_at": presc.updated_at.isoformat()
+        })
+    return results
+
+# 4. Get Patient's Prescriptions
+@app.get("/api/patient/{patient_uid}/prescriptions")
+def get_patient_prescriptions(patient_uid: str, email: Optional[str] = None, db: Session = Depends(get_db)):
+    if email:
+        prescriptions = db.query(PrescriptionDB).filter(
+            (PrescriptionDB.patient_id == patient_uid) | (PrescriptionDB.patient_email == email)
+        ).order_by(PrescriptionDB.created_at.desc()).all()
+    else:
+        prescriptions = db.query(PrescriptionDB).filter(PrescriptionDB.patient_id == patient_uid).order_by(PrescriptionDB.created_at.desc()).all()
+        
+    results = []
+    for presc in prescriptions:
+        doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
+        doc_name = doc.full_name if doc else "Doctor"
+        
+        try:
+            meds = json.loads(presc.medicines)
+        except Exception:
+            meds = []
+            
+        results.append({
+            "id": presc.id,
+            "doctor_id": presc.doctor_id,
+            "doctor_name": doc_name,
+            "patient_id": presc.patient_id,
+            "patient_name": presc.patient_name,
+            "patient_email": presc.patient_email,
+            "diagnosis": presc.diagnosis,
+            "medicines": meds,
+            "additional_recommendations": presc.additional_recommendations,
+            "created_at": presc.created_at.isoformat(),
+            "updated_at": presc.updated_at.isoformat()
+        })
+    return results
+
+# 5. Get Single Prescription
+@app.get("/api/prescriptions/{prescription_id}")
+def get_prescription(prescription_id: int, db: Session = Depends(get_db)):
+    presc = db.query(PrescriptionDB).filter(PrescriptionDB.id == prescription_id).first()
+    if not presc:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+        
+    doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
+    doc_name = doc.full_name if doc else "Doctor"
+    
+    try:
+        meds = json.loads(presc.medicines)
+    except Exception:
+        meds = []
+        
+    return {
+        "id": presc.id,
+        "doctor_id": presc.doctor_id,
+        "doctor_name": doc_name,
+        "patient_id": presc.patient_id,
+        "patient_name": presc.patient_name,
+        "patient_email": presc.patient_email,
+        "diagnosis": presc.diagnosis,
+        "medicines": meds,
+        "additional_recommendations": presc.additional_recommendations,
+        "created_at": presc.created_at.isoformat(),
+        "updated_at": presc.updated_at.isoformat()
+    }
+
+# 6. Delete Prescription
+@app.delete("/api/prescriptions/{prescription_id}")
+def delete_prescription(prescription_id: int, doctor_uid: str, db: Session = Depends(get_db)):
+    presc = db.query(PrescriptionDB).filter(PrescriptionDB.id == prescription_id).first()
+    if not presc:
+        raise HTTPException(status_code=404, detail="Prescription not found")
+    if presc.doctor_id != doctor_uid:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this prescription")
+        
+    db.delete(presc)
+    db.commit()
+    return {"message": "Prescription deleted successfully"}

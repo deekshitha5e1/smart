@@ -91,7 +91,8 @@ const Sidebar = ({ role }) => {
     { name: 'Doctor Profile', icon: <Users size={20} />, path: '/doctor/profile' },
     { name: 'Accept Appointment', icon: <CalendarCheck size={20} />, path: '/doctor/accept-appointment' },
     { name: 'Total Patients', icon: <Users size={20} />, path: '/doctor/patients' },
-    { name: 'Schedule Appointment', icon: <CalendarPlus size={20} />, path: '/doctor/schedule' }
+    { name: 'Schedule Appointment', icon: <CalendarPlus size={20} />, path: '/doctor/schedule' },
+    { name: 'Manage Prescriptions', icon: <Pill size={20} />, path: '/doctor/prescriptions' }
   ];
 
   const patientModules = [
