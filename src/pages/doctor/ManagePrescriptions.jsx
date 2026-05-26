@@ -105,8 +105,8 @@ const ManagePrescriptions = () => {
     const appt = appointments.find(a => a.id === parseInt(apptId));
     if (appt) {
       setPatientId(appt.patient_id);
-      setPatientName(appt.patient_name);
-      setPatientEmail(appt.patient_email);
+      setPatientName(appt.patientName);
+      setPatientEmail(appt.patientEmail);
     }
   };
 
@@ -184,7 +184,7 @@ const ManagePrescriptions = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!patientName.trim()) {
+    if (!patientName || !patientName.trim()) {
       triggerAlert("Patient name is required", "error");
       return;
     }
