@@ -189,6 +189,7 @@ class PrescriptionResponse(BaseModel):
     id: int
     doctor_id: str
     doctor_name: str
+    doctor_specialisation: Optional[str] = None
     patient_id: Optional[str] = None
     patient_name: str
     patient_email: Optional[str] = None
@@ -537,6 +538,9 @@ def get_doctor_prescriptions(doctor_uid: str, db: Session = Depends(get_db)):
         doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
         doc_name = doc.full_name if doc else "Doctor"
         
+        doc_profile = db.query(DoctorDB).filter(DoctorDB.user_id == presc.doctor_id).first()
+        doc_specialisation = doc_profile.specialisation if doc_profile else "Specialist"
+        
         try:
             meds = json.loads(presc.medicines)
         except Exception:
@@ -546,6 +550,7 @@ def get_doctor_prescriptions(doctor_uid: str, db: Session = Depends(get_db)):
             "id": presc.id,
             "doctor_id": presc.doctor_id,
             "doctor_name": doc_name,
+            "doctor_specialisation": doc_specialisation,
             "patient_id": presc.patient_id,
             "patient_name": presc.patient_name,
             "patient_email": presc.patient_email,
@@ -572,6 +577,9 @@ def get_patient_prescriptions(patient_uid: str, email: Optional[str] = None, db:
         doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
         doc_name = doc.full_name if doc else "Doctor"
         
+        doc_profile = db.query(DoctorDB).filter(DoctorDB.user_id == presc.doctor_id).first()
+        doc_specialisation = doc_profile.specialisation if doc_profile else "Specialist"
+        
         try:
             meds = json.loads(presc.medicines)
         except Exception:
@@ -581,6 +589,7 @@ def get_patient_prescriptions(patient_uid: str, email: Optional[str] = None, db:
             "id": presc.id,
             "doctor_id": presc.doctor_id,
             "doctor_name": doc_name,
+            "doctor_specialisation": doc_specialisation,
             "patient_id": presc.patient_id,
             "patient_name": presc.patient_name,
             "patient_email": presc.patient_email,
@@ -602,6 +611,9 @@ def get_prescription(prescription_id: int, db: Session = Depends(get_db)):
     doc = db.query(UserDB).filter(UserDB.uid == presc.doctor_id).first()
     doc_name = doc.full_name if doc else "Doctor"
     
+    doc_profile = db.query(DoctorDB).filter(DoctorDB.user_id == presc.doctor_id).first()
+    doc_specialisation = doc_profile.specialisation if doc_profile else "Specialist"
+    
     try:
         meds = json.loads(presc.medicines)
     except Exception:
@@ -611,6 +623,7 @@ def get_prescription(prescription_id: int, db: Session = Depends(get_db)):
         "id": presc.id,
         "doctor_id": presc.doctor_id,
         "doctor_name": doc_name,
+        "doctor_specialisation": doc_specialisation,
         "patient_id": presc.patient_id,
         "patient_name": presc.patient_name,
         "patient_email": presc.patient_email,

@@ -352,7 +352,7 @@ const Prescriptions = () => {
       <div class="meta-item">
         <label>Prescribing Physician</label>
         <strong>Dr. ${presc.doctor_name}</strong>
-        <span>CarePulse Authorized Specialist</span>
+        <span>${presc.doctor_specialisation || 'CarePulse Authorized Specialist'}</span>
       </div>
       <div class="meta-item">
         <label>Issued For Patient</label>
@@ -596,7 +596,7 @@ const Prescriptions = () => {
                     <div>
                       <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem', letterSpacing: '0.04em' }}>Prescribing Physician</span>
                       <strong style={{ fontSize: '1.05rem', color: 'var(--text-dark)', display: 'block', fontFamily: "'Outfit', sans-serif" }}>Dr. {presc.doctor_name}</strong>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>CarePulse Authorized Specialist</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>{presc.doctor_specialisation || 'CarePulse Authorized Specialist'}</span>
                     </div>
 
                     <div>

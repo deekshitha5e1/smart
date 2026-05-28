@@ -312,6 +312,7 @@ const PatientAppointments = () => {
       <div class="meta-item">
         <label>Consulting Physician</label>
         <strong>Dr. ${app.doctorName}</strong>
+        <span>${app.doctorSpecialisation}</span>
       </div>
       <div class="meta-item">
         <label>Registered Patient</label>
