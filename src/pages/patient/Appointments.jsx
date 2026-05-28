@@ -33,6 +33,7 @@ const PatientAppointments = () => {
       const API_URL = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${API_URL}/api/patient/${userUid}/appointments`);
       if (response.ok) {
+        const data = await response.json();
         const mapped = data.map(app => ({
           id: app.id,
           doctorName: app.doctor_name,
@@ -311,7 +312,6 @@ const PatientAppointments = () => {
       <div class="meta-item">
         <label>Consulting Physician</label>
         <strong>Dr. ${app.doctorName}</strong>
-        <span>${app.doctorSpecialisation}</span>
       </div>
       <div class="meta-item">
         <label>Registered Patient</label>
