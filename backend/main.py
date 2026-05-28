@@ -164,6 +164,7 @@ class AppointmentResponse(BaseModel):
     patient_email: str
     doctor_id: str
     doctor_name: str
+    doctor_specialisation: Optional[str] = None
     appointment_date: datetime.date
     appointment_time: datetime.time
     status: str
@@ -416,6 +417,10 @@ def get_doctor_appointments(doctor_uid: str, db: Session = Depends(get_db)):
         doctor = db.query(UserDB).filter(UserDB.uid == appt.doctor_id).first()
         
         if patient and doctor:
+            # Query specialisation from DoctorDB
+            doc_profile = db.query(DoctorDB).filter(DoctorDB.user_id == appt.doctor_id).first()
+            specialisation = doc_profile.specialisation if doc_profile else "Specialist"
+            
             appointments_list.append(AppointmentResponse(
                 id=appt.id,
                 patient_id=appt.patient_id,
@@ -423,6 +428,7 @@ def get_doctor_appointments(doctor_uid: str, db: Session = Depends(get_db)):
                 patient_email=patient.email,
                 doctor_id=appt.doctor_id,
                 doctor_name=doctor.full_name,
+                doctor_specialisation=specialisation,
                 appointment_date=appt.appointment_date,
                 appointment_time=appt.appointment_time,
                 status=appt.status
@@ -441,6 +447,10 @@ def get_patient_appointments(patient_uid: str, db: Session = Depends(get_db)):
         doctor = db.query(UserDB).filter(UserDB.uid == appt.doctor_id).first()
         
         if patient and doctor:
+            # Query specialisation from DoctorDB
+            doc_profile = db.query(DoctorDB).filter(DoctorDB.user_id == appt.doctor_id).first()
+            specialisation = doc_profile.specialisation if doc_profile else "Specialist"
+            
             appointments_list.append(AppointmentResponse(
                 id=appt.id,
                 patient_id=appt.patient_id,
@@ -448,6 +458,7 @@ def get_patient_appointments(patient_uid: str, db: Session = Depends(get_db)):
                 patient_email=patient.email,
                 doctor_id=appt.doctor_id,
                 doctor_name=doctor.full_name,
+                doctor_specialisation=specialisation,
                 appointment_date=appt.appointment_date,
                 appointment_time=appt.appointment_time,
                 status=appt.status

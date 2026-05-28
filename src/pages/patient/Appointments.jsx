@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageLayout from '../../components/PageLayout';
 import { auth } from '../../firebase';
-import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse } from 'lucide-react';
+import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PatientAppointments = () => {
@@ -33,11 +33,12 @@ const PatientAppointments = () => {
       const API_URL = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${API_URL}/api/patient/${userUid}/appointments`);
       if (response.ok) {
-        const data = await response.json();
         const mapped = data.map(app => ({
           id: app.id,
           doctorName: app.doctor_name,
           doctorEmail: app.doctor_email,
+          doctorSpecialisation: app.doctor_specialisation || 'Authorized Specialist',
+          patientName: app.patient_name || localStorage.getItem('userName') || 'Patient User',
           date: app.appointment_date,
           time: app.appointment_time,
           status: app.status
@@ -56,6 +57,311 @@ const PatientAppointments = () => {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  const handleDownloadAppointment = (app) => {
+    const statusText = app.status === 'pending' ? 'Pending Approval' : app.status === 'accepted' ? 'Accepted & Confirmed' : 'Declined / Cancelled';
+    const statusColor = app.status === 'pending' ? '#d97706' : app.status === 'accepted' ? '#059669' : '#dc2626';
+    const statusBg = app.status === 'pending' ? 'rgba(254, 243, 199, 0.7)' : app.status === 'accepted' ? 'rgba(209, 250, 229, 0.7)' : 'rgba(254, 226, 226, 0.7)';
+    const statusBorder = app.status === 'pending' ? '#fef3c7' : app.status === 'accepted' ? '#d1fae5' : '#fee2e2';
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CarePulse Appointment - Dr. ${app.doctorName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --secondary: #10b981;
+      --text-dark: #0f172a;
+      --text-light: #64748b;
+      --bg: #f8fafc;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    
+    /* Top Action Bar */
+    .action-bar {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 2rem;
+      padding: 0 1rem;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .btn-print {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
+    }
+
+    /* Main Slip Card */
+    .slip-container {
+      background: white;
+      width: calc(100% - 2rem);
+      max-width: 600px;
+      margin: 1.5rem 1rem 3rem;
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-sizing: border-box;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .slip-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    /* Header styling */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .hospital-title {
+      margin: 0;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      color: var(--primary-dark);
+      letter-spacing: -0.01em;
+    }
+    .slip-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-light);
+      background: #f1f5f9;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+    }
+
+    /* Info sections */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+    .meta-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .meta-item label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.04em;
+    }
+    .meta-item strong {
+      font-size: 1.05rem;
+      color: var(--text-dark);
+      display: block;
+      font-family: 'Outfit', sans-serif;
+    }
+    .meta-item span {
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+
+    /* Details styling */
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 1rem 0;
+    }
+    .details-row:last-child {
+      border-bottom: none;
+    }
+    .details-label {
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+    .details-val {
+      font-weight: 700;
+      color: var(--text-dark);
+      font-size: 0.95rem;
+      text-align: right;
+    }
+
+    /* Status badge style */
+    .status-badge {
+      background: ${statusBg};
+      color: ${statusColor};
+      border: 1px solid ${statusBorder};
+      padding: 0.35rem 1rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-block;
+    }
+
+    /* Footer verification */
+    .footer {
+      margin-top: 2.5rem;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .footer-ledger {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+    .signature-block {
+      text-align: right;
+      width: 180px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #cbd5e1;
+      height: 30px;
+      margin-bottom: 0.4rem;
+    }
+
+    /* Print styling */
+    @media print {
+      body {
+        background-color: white;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .slip-container {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="action-bar">
+    <button class="btn-print" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Print / Save to PDF
+    </button>
+  </div>
+
+  <div class="slip-container">
+    <div class="header">
+      <h3 class="hospital-title">CarePulse Hospital</h3>
+      <span class="slip-tag">Appointment Confirmation</span>
+    </div>
+
+    <div class="meta-box">
+      <div class="meta-item">
+        <label>Consulting Physician</label>
+        <strong>Dr. ${app.doctorName}</strong>
+        <span>${app.doctorSpecialisation}</span>
+      </div>
+      <div class="meta-item">
+        <label>Registered Patient</label>
+        <strong>${app.patientName}</strong>
+        <span>CarePulse Verified Account</span>
+      </div>
+    </div>
+
+    <div>
+      <span class="section-title">Schedule Information</span>
+      <div class="details-row">
+        <span class="details-label">Date of Consultation</span>
+        <span class="details-val">${app.date}</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Allocated Time Slot</span>
+        <span class="details-val">${app.time}</span>
+      </div>
+      <div class="details-row" style="align-items: center;">
+        <span class="details-label">Appointment Status</span>
+        <span class="details-val">
+          <span class="status-badge">${statusText}</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-ledger">
+        <p style="margin: 0;">CarePulse Clinical Operations Registry</p>
+        <p style="margin: 0.2rem 0 0; font-family: monospace; opacity: 0.8;">REG-ID: APPT-00${app.id}</p>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-dark);">Authorized Registrar</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+    `;
+
+    const element = document.createElement("a");
+    const file = new Blob([htmlContent], { type: 'text/html' });
+    element.href = URL.createObjectURL(file);
+    element.download = `CarePulse_Appointment_Details_${app.id}.html`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
 
   // Cancel Pending Appointment (updates status to 'rejected' via API)
   const handleCancelAppointment = async (id) => {
@@ -608,7 +914,7 @@ const PatientAppointments = () => {
                           Dr. {app.doctorName}
                         </h4>
                         <p style={{ margin: '0.2rem 0 0', color: 'var(--text-light)', fontSize: '0.875rem' }}>
-                          CarePulse Medical Consultant
+                          {app.doctorSpecialisation}
                         </p>
                       </div>
                     </div>
@@ -644,30 +950,60 @@ const PatientAppointments = () => {
                       </span>
                     </div>
 
-                    {app.status === 'pending' && (
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       <button
-                        onClick={() => handleCancelAppointment(app.id)}
-                        onMouseEnter={() => setHoveredCancelBtn(app.id)}
-                        onMouseLeave={() => setHoveredCancelBtn(null)}
+                        onClick={() => handleDownloadAppointment(app)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.35rem',
-                          background: hoveredCancelBtn === app.id ? 'rgba(239, 68, 68, 0.05)' : 'white',
-                          color: '#ef4444',
-                          border: '1.5px solid #fca5a5',
+                          background: 'rgba(14, 165, 233, 0.05)',
+                          color: 'var(--primary)',
+                          border: '1.5px solid rgba(14, 165, 233, 0.3)',
                           padding: '0.5rem 1.2rem',
                           borderRadius: '10px',
                           cursor: 'pointer',
                           fontWeight: '600',
                           fontSize: '0.85rem',
                           transition: 'all 0.2s',
-                          boxShadow: hoveredCancelBtn === app.id ? '0 4px 10px rgba(239, 68, 68, 0.08)' : 'none'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = 'rgba(14, 165, 233, 0.15)';
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = 'rgba(14, 165, 233, 0.05)';
+                          e.currentTarget.style.transform = 'none';
                         }}
                       >
-                        <X size={14} /> Cancel Request
+                        <Download size={14} /> Download Slip
                       </button>
-                    )}
+
+                      {app.status === 'pending' && (
+                        <button
+                          onClick={() => handleCancelAppointment(app.id)}
+                          onMouseEnter={() => setHoveredCancelBtn(app.id)}
+                          onMouseLeave={() => setHoveredCancelBtn(null)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            background: hoveredCancelBtn === app.id ? 'rgba(239, 68, 68, 0.05)' : 'white',
+                            color: '#ef4444',
+                            border: '1.5px solid #fca5a5',
+                            padding: '0.5rem 1.2rem',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.85rem',
+                            transition: 'all 0.2s',
+                            boxShadow: hoveredCancelBtn === app.id ? '0 4px 10px rgba(239, 68, 68, 0.08)' : 'none'
+                          }}
+                        >
+                          <X size={14} /> Cancel Request
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
