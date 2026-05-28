@@ -983,6 +983,7 @@ const AcceptAppointment = () => {
                     )}
                   </div>
                 </div>
+              </div>
               );
             })}
           </div>
