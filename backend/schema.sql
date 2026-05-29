@@ -84,3 +84,22 @@ CREATE TABLE prescriptions (
 CREATE INDEX idx_prescriptions_doctor ON prescriptions(doctor_id);
 CREATE INDEX idx_prescriptions_patient ON prescriptions(patient_id);
 
+-- =======================================================
+-- 7. REVIEWS TABLE
+-- Stores patient reviews and ratings for appointments.
+-- =======================================================
+CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    appointment_id INTEGER NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+    patient_id VARCHAR(255) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+    doctor_id VARCHAR(255) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    pdf_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_reviews_doctor ON reviews(doctor_id);
+CREATE INDEX idx_reviews_patient ON reviews(patient_id);
+CREATE INDEX idx_reviews_appointment ON reviews(appointment_id);
+
+

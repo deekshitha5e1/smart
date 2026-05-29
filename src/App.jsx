@@ -16,6 +16,7 @@ import TotalPatients from './pages/doctor/TotalPatients';
 import DoctorSchedule from './pages/doctor/DoctorSchedule';
 import DoctorProfile from './pages/doctor/DoctorProfile';
 import ManagePrescriptions from './pages/doctor/ManagePrescriptions';
+import DoctorReviews from './pages/doctor/Reviews';
 
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
       <Route path="/doctor/schedule" element={<DashboardLayout role="doctor"><DoctorSchedule /></DashboardLayout>} />
       <Route path="/doctor/profile" element={<DashboardLayout role="doctor"><DoctorProfile /></DashboardLayout>} />
       <Route path="/doctor/prescriptions" element={<DashboardLayout role="doctor"><ManagePrescriptions /></DashboardLayout>} />
+      <Route path="/doctor/reviews" element={<DashboardLayout role="doctor"><DoctorReviews /></DashboardLayout>} />
       
       <Route path="/patient" element={<DashboardLayout role="patient"><PatientDashboard /></DashboardLayout>} />
       <Route path="/patient/appointments" element={<DashboardLayout role="patient"><PatientAppointments /></DashboardLayout>} />

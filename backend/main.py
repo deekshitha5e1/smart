@@ -109,6 +109,18 @@ class PrescriptionDB(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
+class ReviewDB(Base):
+    __tablename__ = "reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id", ondelete="CASCADE"), nullable=False)
+    patient_id = Column(String, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+    doctor_id = Column(String, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
+    rating = Column(Integer, nullable=False)
+    pdf_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 # Create tables in Database (if they don't exist yet)
 try:
     Base.metadata.create_all(bind=engine)
@@ -202,7 +214,28 @@ class PrescriptionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ReviewCreate(BaseModel):
+    appointment_id: int
+    patient_id: str
+    doctor_id: str
+    rating: int
+    pdf_url: Optional[str] = None
+
+class ReviewResponse(BaseModel):
+    id: int
+    appointment_id: int
+    patient_id: str
+    patient_name: str
+    doctor_id: str
+    rating: int
+    pdf_url: Optional[str] = None
+    created_at: datetime.datetime
+
+    class Config:
+        from_attributes = True
+
 # --- FastAPI App Setup ---
+
 app = FastAPI(title="Hospital Backend API (Supabase & PostgreSQL)")
 
 app.add_middleware(
@@ -646,3 +679,75 @@ def delete_prescription(prescription_id: int, doctor_uid: str, db: Session = Dep
     db.delete(presc)
     db.commit()
     return {"message": "Prescription deleted successfully"}
+
+# --- Review Endpoints ---
+
+# 1. Create Review
+@app.post("/api/reviews")
+def create_review(req: ReviewCreate, db: Session = Depends(get_db)):
+    # Verify appointment exists
+    appt = db.query(AppointmentDB).filter(AppointmentDB.id == req.appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    # Check if a review already exists for this appointment
+    existing_review = db.query(ReviewDB).filter(ReviewDB.appointment_id == req.appointment_id).first()
+    if existing_review:
+        raise HTTPException(status_code=400, detail="Review already exists for this appointment")
+        
+    new_review = ReviewDB(
+        appointment_id=req.appointment_id,
+        patient_id=req.patient_id,
+        doctor_id=req.doctor_id,
+        rating=req.rating,
+        pdf_url=req.pdf_url
+    )
+    db.add(new_review)
+    db.commit()
+    db.refresh(new_review)
+    return {"message": "Review submitted successfully", "review_id": new_review.id}
+
+# 2. Get Doctor's Reviews
+@app.get("/api/reviews/doctor/{doctor_uid}", response_model=List[ReviewResponse])
+def get_doctor_reviews(doctor_uid: str, db: Session = Depends(get_db)):
+    reviews = db.query(ReviewDB).filter(ReviewDB.doctor_id == doctor_uid).order_by(ReviewDB.created_at.desc()).all()
+    
+    results = []
+    for r in reviews:
+        patient = db.query(UserDB).filter(UserDB.uid == r.patient_id).first()
+        patient_name = patient.full_name if patient else "Unknown Patient"
+        
+        results.append(ReviewResponse(
+            id=r.id,
+            appointment_id=r.appointment_id,
+            patient_id=r.patient_id,
+            patient_name=patient_name,
+            doctor_id=r.doctor_id,
+            rating=r.rating,
+            pdf_url=r.pdf_url,
+            created_at=r.created_at
+        ))
+    return results
+
+# 3. Get Patient's Reviews
+@app.get("/api/reviews/patient/{patient_uid}", response_model=List[ReviewResponse])
+def get_patient_reviews(patient_uid: str, db: Session = Depends(get_db)):
+    reviews = db.query(ReviewDB).filter(ReviewDB.patient_id == patient_uid).order_by(ReviewDB.created_at.desc()).all()
+    
+    results = []
+    for r in reviews:
+        patient = db.query(UserDB).filter(UserDB.uid == r.patient_id).first()
+        patient_name = patient.full_name if patient else "Unknown Patient"
+        
+        results.append(ReviewResponse(
+            id=r.id,
+            appointment_id=r.appointment_id,
+            patient_id=r.patient_id,
+            patient_name=patient_name,
+            doctor_id=r.doctor_id,
+            rating=r.rating,
+            pdf_url=r.pdf_url,
+            created_at=r.created_at
+        ))
+    return results
+

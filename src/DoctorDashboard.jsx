@@ -1,4 +1,4 @@
-import { LogOut, CalendarCheck, Users, CalendarPlus, Pill } from 'lucide-react';
+import { LogOut, CalendarCheck, Users, CalendarPlus, Pill, Star } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ModuleCard from './components/ModuleCard';
@@ -24,7 +24,8 @@ const DoctorDashboard = () => {
     { title: 'Accept Appointment', path: '/doctor/accept-appointment', icon: CalendarCheck, color: 'var(--primary)', desc: 'Review and approve incoming requests' },
     { title: 'Total Patients', path: '/doctor/patients', icon: Users, color: 'var(--secondary)', desc: 'Manage your patient roster' },
     { title: 'Schedule Appointment', path: '/doctor/schedule', icon: CalendarPlus, color: '#f59e0b', desc: 'Book follow-ups manually' },
-    { title: 'Manage Prescriptions', path: '/doctor/prescriptions', icon: Pill, color: '#ec4899', desc: 'Create and manage digital prescriptions' }
+    { title: 'Manage Prescriptions', path: '/doctor/prescriptions', icon: Pill, color: '#ec4899', desc: 'Create and manage digital prescriptions' },
+    { title: 'Patient Reviews', path: '/doctor/reviews', icon: Star, color: '#eab308', desc: 'View patient feedback and ratings' }
   ];
 
   return (

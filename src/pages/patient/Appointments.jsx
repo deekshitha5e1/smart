@@ -1,13 +1,22 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageLayout from '../../components/PageLayout';
 import { auth } from '../../firebase';
-import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse, Download } from 'lucide-react';
+import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse, Download, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PatientAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Review states
+  const [reviews, setReviews] = useState({});
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedApptForReview, setSelectedApptForReview] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewPdfBase64, setReviewPdfBase64] = useState('');
+  const [reviewPdfName, setReviewPdfName] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // Filter States
   const [showFilters, setShowFilters] = useState(false);
@@ -31,11 +40,14 @@ const PatientAppointments = () => {
     
     try {
       const API_URL = import.meta.env.VITE_API_URL || '';
+      // Fetch appointments
       const response = await fetch(`${API_URL}/api/patient/${userUid}/appointments`);
+      let mapped = [];
       if (response.ok) {
         const data = await response.json();
-        const mapped = data.map(app => ({
+        mapped = data.map(app => ({
           id: app.id,
+          doctorUid: app.doctor_id,
           doctorName: app.doctor_name,
           doctorEmail: app.doctor_email,
           doctorSpecialisation: app.doctor_specialisation || 'Authorized Specialist',
@@ -46,10 +58,22 @@ const PatientAppointments = () => {
         }));
         // Sort by date descending
         mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
-        setAppointments(mapped);
       }
+
+      // Fetch patient's reviews
+      const reviewsResponse = await fetch(`${API_URL}/api/reviews/patient/${userUid}`);
+      if (reviewsResponse.ok) {
+        const reviewsData = await reviewsResponse.json();
+        const reviewsMap = {};
+        reviewsData.forEach(r => {
+          reviewsMap[r.appointment_id] = r;
+        });
+        setReviews(reviewsMap);
+      }
+
+      setAppointments(mapped);
     } catch (error) {
-      console.error("Error fetching patient appointments:", error);
+      console.error("Error fetching patient appointments/reviews:", error);
     } finally {
       setLoading(false);
     }
@@ -980,6 +1004,64 @@ const PatientAppointments = () => {
                         <Download size={14} /> Download Slip
                       </button>
 
+                      {app.status === 'accepted' && (
+                        reviews[app.id] ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '0.5rem 1.2rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', height: '36px', boxSizing: 'border-box' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-light)', marginRight: '0.25rem' }}>RATED:</span>
+                            {(() => {
+                              const stars = [];
+                              for (let i = 1; i <= 5; i++) {
+                                stars.push(
+                                  <Star 
+                                    key={i} 
+                                    size={13} 
+                                    fill={i <= reviews[app.id].rating ? "#f59e0b" : "transparent"} 
+                                    color={i <= reviews[app.id].rating ? "#f59e0b" : "#cbd5e1"} 
+                                  />
+                                );
+                              }
+                              return stars;
+                            })()}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedApptForReview(app);
+                              setReviewRating(5);
+                              setReviewPdfBase64('');
+                              setReviewPdfName('');
+                              setShowReviewModal(true);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              background: 'rgba(245, 158, 11, 0.05)',
+                              color: '#d97706',
+                              border: '1.5px solid rgba(245, 158, 11, 0.3)',
+                              padding: '0.5rem 1.2rem',
+                              borderRadius: '10px',
+                              cursor: 'pointer',
+                              fontWeight: '600',
+                              fontSize: '0.85rem',
+                              transition: 'all 0.2s',
+                              height: '36px',
+                              boxSizing: 'border-box'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.05)';
+                              e.currentTarget.style.transform = 'none';
+                            }}
+                          >
+                            <Star size={14} /> Review
+                          </button>
+                        )
+                      )}
+
                       {app.status === 'pending' && (
                         <button
                           onClick={() => handleCancelAppointment(app.id)}
@@ -1012,6 +1094,193 @@ const PatientAppointments = () => {
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      {showReviewModal && selectedApptForReview && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          background: 'rgba(15, 23, 42, 0.6)', 
+          backdropFilter: 'blur(4px)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 1100, 
+          padding: '1rem' 
+        }}>
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '24px', 
+            width: '100%', 
+            maxWidth: '450px', 
+            padding: '2rem', 
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', 
+            animation: 'slideUp 0.3s ease-out', 
+            boxSizing: 'border-box' 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-dark)', fontFamily: "'Outfit', sans-serif" }}>Submit Review</h3>
+              <button onClick={() => setShowReviewModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-light)', lineHeight: 1 }}>&times;</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Appointment ID</label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={`#${selectedApptForReview.id}`} 
+                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Physician</label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={`Dr. ${selectedApptForReview.doctorName}`} 
+                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Select Rating</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setReviewRating(star)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                    >
+                      <Star 
+                        size={28} 
+                        fill={star <= reviewRating ? "#f59e0b" : "transparent"} 
+                        color={star <= reviewRating ? "#f59e0b" : "#cbd5e1"} 
+                        style={{ transition: 'all 0.1s ease' }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Upload Appointment PDF</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      if (file.type !== 'application/pdf') {
+                        alert("Only PDF files are allowed.");
+                        return;
+                      }
+                      setReviewPdfName(file.name);
+                      const reader = new FileReader();
+                      reader.readAsDataURL(file);
+                      reader.onload = () => {
+                        setReviewPdfBase64(reader.result);
+                      };
+                    }}
+                    style={{ display: 'none' }}
+                    id="review-pdf-upload"
+                  />
+                  <label 
+                    htmlFor="review-pdf-upload"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      border: '1.5px dashed #cbd5e1',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      cursor: 'pointer',
+                      background: '#f8fafc',
+                      color: 'var(--text-dark)',
+                      fontWeight: '600',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}
+                  >
+                    <Download size={18} style={{ transform: 'rotate(180deg)' }} /> 
+                    {reviewPdfName ? reviewPdfName : "Choose PDF Report"}
+                  </label>
+                  {reviewPdfName && (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--secondary)', fontWeight: '600' }}>✓ PDF loaded successfully!</span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowReviewModal(false)}
+                  style={{ flex: 1, background: '#f1f5f9', color: 'var(--text-dark)', border: 'none', padding: '0.75rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  disabled={submittingReview}
+                  onClick={async () => {
+                    if (!reviewPdfBase64) {
+                      alert("Please upload the appointment PDF to submit the review.");
+                      return;
+                    }
+                    setSubmittingReview(true);
+                    try {
+                      const API_URL = import.meta.env.VITE_API_URL || '';
+                      const response = await fetch(`${API_URL}/api/reviews`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          appointment_id: selectedApptForReview.id,
+                          patient_id: userUid,
+                          doctor_id: selectedApptForReview.doctorUid,
+                          rating: reviewRating,
+                          pdf_url: reviewPdfBase64
+                        })
+                      });
+                      if (response.ok) {
+                        setReviews(prev => ({
+                          ...prev,
+                          [selectedApptForReview.id]: {
+                            appointment_id: selectedApptForReview.id,
+                            rating: reviewRating,
+                            pdf_url: reviewPdfBase64
+                          }
+                        }));
+                        setShowReviewModal(false);
+                        alert("Review submitted successfully!");
+                      } else {
+                        const err = await response.json();
+                        alert(err.detail || "Failed to submit review.");
+                      }
+                    } catch (error) {
+                      console.error("Error submitting review:", error);
+                      alert("An error occurred. Please try again.");
+                    } finally {
+                      setSubmittingReview(false);
+                    }
+                  }}
+                  style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '0.75rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', opacity: submittingReview ? 0.7 : 1 }}
+                >
+                  {submittingReview ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic animations */}
       <style dangerouslySetInnerHTML={{__html: `
