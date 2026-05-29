@@ -117,6 +117,8 @@ class ReviewDB(Base):
     patient_id = Column(String, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
     doctor_id = Column(String, ForeignKey("users.uid", ondelete="CASCADE"), nullable=False)
     rating = Column(Integer, nullable=False)
+    comments = Column(String, nullable=True)
+    suggestions = Column(String, nullable=True)
     pdf_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -219,6 +221,8 @@ class ReviewCreate(BaseModel):
     patient_id: str
     doctor_id: str
     rating: int
+    comments: Optional[str] = None
+    suggestions: Optional[str] = None
     pdf_url: Optional[str] = None
 
 class ReviewResponse(BaseModel):
@@ -228,6 +232,8 @@ class ReviewResponse(BaseModel):
     patient_name: str
     doctor_id: str
     rating: int
+    comments: Optional[str] = None
+    suggestions: Optional[str] = None
     pdf_url: Optional[str] = None
     created_at: datetime.datetime
 
@@ -700,6 +706,8 @@ def create_review(req: ReviewCreate, db: Session = Depends(get_db)):
         patient_id=req.patient_id,
         doctor_id=req.doctor_id,
         rating=req.rating,
+        comments=req.comments,
+        suggestions=req.suggestions,
         pdf_url=req.pdf_url
     )
     db.add(new_review)
@@ -724,6 +732,8 @@ def get_doctor_reviews(doctor_uid: str, db: Session = Depends(get_db)):
             patient_name=patient_name,
             doctor_id=r.doctor_id,
             rating=r.rating,
+            comments=r.comments,
+            suggestions=r.suggestions,
             pdf_url=r.pdf_url,
             created_at=r.created_at
         ))
@@ -746,6 +756,8 @@ def get_patient_reviews(patient_uid: str, db: Session = Depends(get_db)):
             patient_name=patient_name,
             doctor_id=r.doctor_id,
             rating=r.rating,
+            comments=r.comments,
+            suggestions=r.suggestions,
             pdf_url=r.pdf_url,
             created_at=r.created_at
         ))

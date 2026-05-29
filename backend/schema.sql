@@ -94,6 +94,8 @@ CREATE TABLE reviews (
     patient_id VARCHAR(255) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
     doctor_id VARCHAR(255) NOT NULL REFERENCES users(uid) ON DELETE CASCADE,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comments TEXT,
+    suggestions TEXT,
     pdf_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

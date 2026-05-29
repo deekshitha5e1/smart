@@ -150,6 +150,21 @@ const DoctorReviews = () => {
                   </div>
                 </div>
 
+                {/* Comments & Suggestions Blocks */}
+                {review.comments && (
+                  <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>Comments</div>
+                    <p style={{ margin: 0, fontSize: '0.925rem', color: 'var(--text-dark)', lineHeight: '1.5' }}>{review.comments}</p>
+                  </div>
+                )}
+
+                {review.suggestions && (
+                  <div style={{ background: 'rgba(14, 165, 233, 0.03)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(14, 165, 233, 0.1)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--primary-dark)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.05em' }}>Suggestions</div>
+                    <p style={{ margin: 0, fontSize: '0.925rem', color: 'var(--text-dark)', lineHeight: '1.5' }}>{review.suggestions}</p>
+                  </div>
+                )}
+
                 {review.pdf_url && (
                   <div style={{ 
                     display: 'flex', 

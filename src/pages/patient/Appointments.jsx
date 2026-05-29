@@ -3,6 +3,7 @@ import PageLayout from '../../components/PageLayout';
 import { auth } from '../../firebase';
 import { Check, X, Calendar, Clock, User, Filter, ChevronDown, ChevronUp, RotateCcw, Stethoscope, HeartPulse, Download, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
 
 const PatientAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -16,6 +17,10 @@ const PatientAppointments = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewPdfBase64, setReviewPdfBase64] = useState('');
   const [reviewPdfName, setReviewPdfName] = useState('');
+  const [reviewComments, setReviewComments] = useState('');
+  const [reviewSuggestions, setReviewSuggestions] = useState('');
+  const [reviewDoctorDetails, setReviewDoctorDetails] = useState(null);
+  const [loadingDoctorDetails, setLoadingDoctorDetails] = useState(false);
   const [submittingReview, setSubmittingReview] = useState(false);
 
   // Filter States
@@ -85,307 +90,141 @@ const PatientAppointments = () => {
 
   const handleDownloadAppointment = (app) => {
     const statusText = app.status === 'pending' ? 'Pending Approval' : app.status === 'accepted' ? 'Accepted & Confirmed' : 'Declined / Cancelled';
-    const statusColor = app.status === 'pending' ? '#d97706' : app.status === 'accepted' ? '#059669' : '#dc2626';
-    const statusBg = app.status === 'pending' ? 'rgba(254, 243, 199, 0.7)' : app.status === 'accepted' ? 'rgba(209, 250, 229, 0.7)' : 'rgba(254, 226, 226, 0.7)';
-    const statusBorder = app.status === 'pending' ? '#fef3c7' : app.status === 'accepted' ? '#d1fae5' : '#fee2e2';
 
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CarePulse Appointment - Dr. ${app.doctorName}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #0ea5e9;
-      --primary-dark: #0284c7;
-      --secondary: #10b981;
-      --text-dark: #0f172a;
-      --text-light: #64748b;
-      --bg: #f8fafc;
-    }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      color: var(--text-dark);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
+    });
+
+    // Outer border
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(2);
+    doc.rect(40, 40, 515, 762);
+
+    // Banner gradient/header line
+    doc.setFillColor(14, 165, 233); // Primary sky blue
+    doc.rect(40, 40, 515, 8, 'F');
+
+    // CarePulse Branding
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(2, 132, 199); // primary-dark
+    doc.text("CarePulse Hospital", 60, 85);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // text-light
+    doc.text("Clinical Operations Registry", 60, 102);
+
+    // Title Tag Right Aligned
+    doc.setFillColor(241, 245, 249);
+    doc.rect(370, 70, 160, 24, 'F');
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text("APPOINTMENT CONFIRMATION", 380, 85);
+
+    // Divider Line
+    doc.setDrawColor(241, 245, 249);
+    doc.setLineWidth(1.5);
+    doc.line(60, 125, 535, 125);
+
+    // Meta Section Box (Consulting Physician & Registered Patient)
+    doc.setFillColor(248, 250, 252);
+    doc.rect(60, 145, 475, 100, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(1);
+    doc.rect(60, 145, 475, 100);
+
+    // Left Column: Physician details
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("CONSULTING PHYSICIAN", 80, 170);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Dr. ${app.doctorName}`, 80, 190);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(app.doctorSpecialisation, 80, 205);
+    doc.text(`Email: ${app.doctorEmail || 'N/A'}`, 80, 220);
+
+    // Right Column: Patient details
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("REGISTERED PATIENT", 320, 170);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(app.patientName, 320, 190);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text("CarePulse Verified Account", 320, 205);
+
+    // Schedule details title
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text("SCHEDULE INFORMATION", 60, 280);
+
+    // Date row
+    doc.setDrawColor(241, 245, 249);
+    doc.line(60, 290, 535, 290);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Date of Consultation", 60, 310);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(app.date, 440, 310);
+
+    // Time row
+    doc.line(60, 325, 535, 325);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Allocated Time Slot", 60, 345);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(app.time, 440, 345);
+
+    // Status row
+    doc.line(60, 360, 535, 360);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Appointment Status", 60, 380);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(statusText, 440, 380);
+    doc.line(60, 395, 535, 395);
+
+    // Footer lines
+    doc.line(60, 680, 535, 680);
     
-    /* Top Action Bar */
-    .action-bar {
-      width: 100%;
-      max-width: 600px;
-      margin-top: 2rem;
-      padding: 0 1rem;
-      box-sizing: border-box;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .btn-print {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 12px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
-      transition: all 0.2s;
-    }
-    .btn-print:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.35);
-    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("CarePulse Clinical Operations Registry", 60, 700);
+    doc.text(`REG-ID: APPT-00${app.id}`, 60, 715);
 
-    /* Main Slip Card */
-    .slip-container {
-      background: white;
-      width: calc(100% - 2rem);
-      max-width: 600px;
-      margin: 1.5rem 1rem 3rem;
-      border-radius: 24px;
-      padding: 2.5rem;
-      box-sizing: border-box;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
-      position: relative;
-      overflow: hidden;
-    }
-    .slip-container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-    }
+    // Signature Block
+    doc.line(380, 710, 535, 710);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Authorized Registrar", 415, 725);
 
-    /* Header styling */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .hospital-title {
-      margin: 0;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.5rem;
-      color: var(--primary-dark);
-      letter-spacing: -0.01em;
-    }
-    .slip-tag {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-light);
-      background: #f1f5f9;
-      padding: 0.35rem 0.75rem;
-      border-radius: 20px;
-    }
-
-    /* Info sections */
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: var(--text-light);
-      letter-spacing: 0.06em;
-      margin-bottom: 0.75rem;
-      display: block;
-    }
-    .meta-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 16px;
-      padding: 1.25rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .meta-item label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--text-light);
-      text-transform: uppercase;
-      display: block;
-      margin-bottom: 0.25rem;
-      letter-spacing: 0.04em;
-    }
-    .meta-item strong {
-      font-size: 1.05rem;
-      color: var(--text-dark);
-      display: block;
-      font-family: 'Outfit', sans-serif;
-    }
-    .meta-item span {
-      font-size: 0.8rem;
-      color: var(--text-light);
-    }
-
-    /* Details styling */
-    .details-row {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #f1f5f9;
-      padding: 1rem 0;
-    }
-    .details-row:last-child {
-      border-bottom: none;
-    }
-    .details-label {
-      font-weight: 600;
-      color: var(--text-light);
-      font-size: 0.95rem;
-    }
-    .details-val {
-      font-weight: 700;
-      color: var(--text-dark);
-      font-size: 0.95rem;
-      text-align: right;
-    }
-
-    /* Status badge style */
-    .status-badge {
-      background: ${statusBg};
-      color: ${statusColor};
-      border: 1px solid ${statusBorder};
-      padding: 0.35rem 1rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      display: inline-block;
-    }
-
-    /* Footer verification */
-    .footer {
-      margin-top: 2.5rem;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-    .footer-ledger {
-      font-size: 0.75rem;
-      color: var(--text-light);
-      line-height: 1.5;
-    }
-    .signature-block {
-      text-align: right;
-      width: 180px;
-    }
-    .signature-line {
-      border-bottom: 1px solid #cbd5e1;
-      height: 30px;
-      margin-bottom: 0.4rem;
-    }
-
-    /* Print styling */
-    @media print {
-      body {
-        background-color: white;
-      }
-      .action-bar {
-        display: none !important;
-      }
-      .slip-container {
-        border: none !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  
-  <div class="action-bar">
-    <button class="btn-print" onclick="window.print()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-      Print / Save to PDF
-    </button>
-  </div>
-
-  <div class="slip-container">
-    <div class="header">
-      <h3 class="hospital-title">CarePulse Hospital</h3>
-      <span class="slip-tag">Appointment Confirmation</span>
-    </div>
-
-    <div class="meta-box">
-      <div class="meta-item">
-        <label>Consulting Physician</label>
-        <strong>Dr. ${app.doctorName}</strong>
-        <span>${app.doctorSpecialisation}</span>
-      </div>
-      <div class="meta-item">
-        <label>Registered Patient</label>
-        <strong>${app.patientName}</strong>
-        <span>CarePulse Verified Account</span>
-      </div>
-    </div>
-
-    <div>
-      <span class="section-title">Schedule Information</span>
-      <div class="details-row">
-        <span class="details-label">Date of Consultation</span>
-        <span class="details-val">${app.date}</span>
-      </div>
-      <div class="details-row">
-        <span class="details-label">Allocated Time Slot</span>
-        <span class="details-val">${app.time}</span>
-      </div>
-      <div class="details-row" style="align-items: center;">
-        <span class="details-label">Appointment Status</span>
-        <span class="details-val">
-          <span class="status-badge">${statusText}</span>
-        </span>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="footer-ledger">
-        <p style="margin: 0;">CarePulse Clinical Operations Registry</p>
-        <p style="margin: 0.2rem 0 0; font-family: monospace; opacity: 0.8;">REG-ID: APPT-00${app.id}</p>
-      </div>
-      <div class="signature-block">
-        <div class="signature-line"></div>
-        <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-dark);">Authorized Registrar</span>
-      </div>
-    </div>
-  </div>
-
-</body>
-</html>
-    `;
-
-    const element = document.createElement("a");
-    const file = new Blob([htmlContent], { type: 'text/html' });
-    element.href = URL.createObjectURL(file);
-    element.download = `CarePulse_Appointment_Details_${app.id}.html`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    doc.save(`CarePulse_Appointment_Details_${app.id}.pdf`);
   };
 
   // Cancel Pending Appointment (updates status to 'rejected' via API)
@@ -1030,6 +869,23 @@ const PatientAppointments = () => {
                               setReviewRating(5);
                               setReviewPdfBase64('');
                               setReviewPdfName('');
+                              setReviewComments('');
+                              setReviewSuggestions('');
+                              setReviewDoctorDetails(null);
+                              setLoadingDoctorDetails(true);
+                              
+                              const API_URL = import.meta.env.VITE_API_URL || '';
+                              fetch(`${API_URL}/api/doctor/profile/${app.doctorUid}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                  setReviewDoctorDetails(data);
+                                  setLoadingDoctorDetails(false);
+                                })
+                                .catch(err => {
+                                  console.error("Error fetching doctor profile:", err);
+                                  setLoadingDoctorDetails(false);
+                                });
+
                               setShowReviewModal(true);
                             }}
                             style={{
@@ -1115,7 +971,7 @@ const PatientAppointments = () => {
             background: 'white', 
             borderRadius: '24px', 
             width: '100%', 
-            maxWidth: '450px', 
+            maxWidth: '520px', 
             padding: '2rem', 
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', 
             animation: 'slideUp 0.3s ease-out', 
@@ -1127,25 +983,50 @@ const PatientAppointments = () => {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Appointment ID</label>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`#${selectedApptForReview.id}`} 
-                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Appointment ID</label>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={`#${selectedApptForReview.id}`} 
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Physician</label>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={`Dr. ${selectedApptForReview.doctorName}`} 
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                  />
+                </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Physician</label>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`Dr. ${selectedApptForReview.doctorName}`} 
-                  style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc', color: 'var(--text-dark)', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
-                />
-              </div>
+              {/* Doctor Details Block */}
+              {loadingDoctorDetails ? (
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Loading physician profile...</span>
+                </div>
+              ) : reviewDoctorDetails ? (
+                <div style={{ 
+                  background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(16, 185, 129, 0.05))', 
+                  padding: '1rem', 
+                  borderRadius: '12px', 
+                  border: '1px solid rgba(14, 165, 233, 0.15)',
+                  fontSize: '0.85rem'
+                }}>
+                  <div style={{ fontWeight: '700', color: 'var(--primary-dark)', marginBottom: '0.4rem', fontFamily: "'Outfit', sans-serif" }}>Physician Profile Details</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', color: 'var(--text-dark)' }}>
+                    <div><strong>Specialisation:</strong> {reviewDoctorDetails.specialisation || 'General Specialist'}</div>
+                    <div><strong>Hospital ID:</strong> {reviewDoctorDetails.hospital_id}</div>
+                    <div><strong>Shift:</strong> <span style={{ textTransform: 'capitalize' }}>{reviewDoctorDetails.shift}</span></div>
+                    <div><strong>Consulted Patients:</strong> {reviewDoctorDetails.patients_consulted}</div>
+                  </div>
+                </div>
+              ) : null}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Select Rating</label>
@@ -1166,6 +1047,28 @@ const PatientAppointments = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Comments</label>
+                <textarea 
+                  value={reviewComments}
+                  onChange={(e) => setReviewComments(e.target.value)}
+                  placeholder="Share your experience with this doctor..."
+                  rows={2}
+                  style={{ width: '100%', padding: '0.6rem 0.85rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white', color: 'var(--text-dark)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'none' }} 
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-light)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Suggestions</label>
+                <textarea 
+                  value={reviewSuggestions}
+                  onChange={(e) => setReviewSuggestions(e.target.value)}
+                  placeholder="Any constructive suggestions for improvement?"
+                  rows={2}
+                  style={{ width: '100%', padding: '0.6rem 0.85rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: 'white', color: 'var(--text-dark)', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'none' }} 
+                />
               </div>
 
               <div>
@@ -1200,7 +1103,7 @@ const PatientAppointments = () => {
                       gap: '0.5rem',
                       border: '1.5px dashed #cbd5e1',
                       borderRadius: '12px',
-                      padding: '1rem',
+                      padding: '0.75rem',
                       cursor: 'pointer',
                       background: '#f8fafc',
                       color: 'var(--text-dark)',
@@ -1220,7 +1123,7 @@ const PatientAppointments = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                 <button 
                   type="button" 
                   onClick={() => setShowReviewModal(false)}
@@ -1247,6 +1150,8 @@ const PatientAppointments = () => {
                           patient_id: userUid,
                           doctor_id: selectedApptForReview.doctorUid,
                           rating: reviewRating,
+                          comments: reviewComments,
+                          suggestions: reviewSuggestions,
                           pdf_url: reviewPdfBase64
                         })
                       });
@@ -1256,6 +1161,8 @@ const PatientAppointments = () => {
                           [selectedApptForReview.id]: {
                             appointment_id: selectedApptForReview.id,
                             rating: reviewRating,
+                            comments: reviewComments,
+                            suggestions: reviewSuggestions,
                             pdf_url: reviewPdfBase64
                           }
                         }));
